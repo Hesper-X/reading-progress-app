@@ -1,0 +1,237 @@
+import 'package:flutter/foundation.dart';
+import '../models/book.dart';
+import '../repositories/book_repository.dart';
+import '../repositories/settings_repository.dart';
+
+/// 书籍状态管理（V3.0：三状态 wish/reading/done）
+/// 包含年度目标达成庆祝状态
+class BooksProvider with ChangeNotifier {
+  final BookRepository _repository;
+  final SettingsRepository _settingsRepository;
+
+  List<Book> _books = [];
+  List<Book> _wishBooks = [];
+  List<Book> _readingBooks = [];
+  List<Book> _doneBooks = [];
+  int _yearlyGoal = 0;
+  bool _isLoading = false;
+  String? _error;
+
+  // ============ 庆祝动画状态 ============
+  bool _celebrationAchieved = false;
+  bool _celebrationTriggered = false;
+  bool _shareButtonClicked = false;
+  String _celebrationDate = '';
+  int _targetVersion = 0;
+
+  BooksProvider({
+    required BookRepository repository,
+    required SettingsRepository settingsRepository,
+  })  : _repository = repository,
+        _settingsRepository = settingsRepository;
+
+  // ============ Getters ============
+
+  List<Book> get books => _books;
+  List<Book> get wishBooks => _wishBooks;
+  List<Book> get readingBooks => _readingBooks;
+  List<Book> get doneBooks => _doneBooks;
+  int get yearlyGoal => _yearlyGoal;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  /// V2.0 兼容：finishedBooks 映射到 doneBooks
+  List<Book> get finishedBooks => _doneBooks;
+
+  bool get celebrationAchieved => _celebrationAchieved;
+  bool get celebrationTriggered => _celebrationTriggered;
+  bool get shareButtonClicked => _shareButtonClicked;
+  String get celebrationDate => _celebrationDate;
+  int get targetVersion => _targetVersion;
+
+  /// 当年已读完成数量
+  int get currentYearCount =>
+      _doneBooks.where((b) => b.readDate?.year == DateTime.now().year).length;
+
+  /// 当前年度进度（0.0 ~ 1.0）
+  double get progress =>
+      _yearlyGoal > 0 ? (currentYearCount / _yearlyGoal).clamp(0.0, 1.0) : 0.0;
+
+  /// 当前在读数量
+  int get readingCount => _readingBooks.length;
+
+  /// 想读数量
+  int get wishCount => _wishBooks.length;
+
+  /// 已读数量
+  int get doneCount => _doneBooks.length;
+
+  /// 总活跃书籍数（不含已放弃）
+  int get activeCount => _wishBooks.length + _readingBooks.length + _doneBooks.length;
+
+  // ============ 数据加载 ============
+
+  Future<void> loadBooks() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _books = await _repository.getAll();
+      _wishBooks = await _repository.getWishBooks();
+      _readingBooks = await _repository.getReadingBooks();
+      _doneBooks = await _repository.getDoneBooks();
+      _yearlyGoal = await _settingsRepository.getYearlyGoal();
+
+      _refreshCelebrationStatus();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _refreshCelebrationStatus() {
+    final isGoalMet = currentYearCount >= _yearlyGoal && _yearlyGoal > 0;
+    if (isGoalMet != _celebrationAchieved) {
+      if (isGoalMet) {
+        _celebrationAchieved = true;
+        _celebrationTriggered = false;
+        _shareButtonClicked = false;
+        _celebrationDate = _todayStr();
+      }
+    }
+  }
+
+  String _todayStr() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  // ============ 庆祝操作 ============
+
+  void markCelebrationTriggered() {
+    _celebrationTriggered = true;
+    notifyListeners();
+  }
+
+  void markShareClicked() {
+    _shareButtonClicked = true;
+    notifyListeners();
+  }
+
+  void resetCelebrationStatus() {
+    _celebrationAchieved = false;
+    _celebrationTriggered = false;
+    _shareButtonClicked = false;
+    _celebrationDate = '';
+    _targetVersion++;
+    notifyListeners();
+  }
+
+  bool shouldShowShareEntry() {
+    final today = _todayStr();
+    return _celebrationAchieved &&
+        _celebrationTriggered &&
+        !_shareButtonClicked &&
+        _celebrationDate == today;
+  }
+
+  // ============ 操作 ============
+
+  /// 添加书籍（V3.0：双模式 wish/reading）
+  Future<bool> addBook({
+    required String title,
+    String? author,
+    String? coverPath,
+    DateTime? startDate,
+    BookStatus status = BookStatus.reading,
+  }) async {
+    try {
+      final book = Book(
+        title: title,
+        author: author ?? '',
+        coverPath: coverPath,
+        startDate: startDate ?? DateTime.now(),
+        status: status,
+      );
+      await _repository.insert(book);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      _error = '添加失败: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 标记读完（V3.0：rating 改用 double）
+  Future<bool> markAsDone({
+    required int bookId,
+    required DateTime readDate,
+    required double rating,
+    String? notes,
+  }) async {
+    try {
+      await _repository.markAsDone(
+        id: bookId,
+        readDate: readDate,
+        rating: rating,
+        notes: notes,
+      );
+      await loadBooks();
+      return true;
+    } catch (e) {
+      _error = '标记失败: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 放弃阅读
+  Future<bool> abandonBook(int bookId) async {
+    try {
+      await _repository.abandon(bookId);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      _error = '操作失败: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 删除书籍
+  Future<bool> deleteBook(int bookId) async {
+    try {
+      await _repository.delete(bookId);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      _error = '删除失败: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 更新年度目标
+  Future<void> updateYearlyGoal(int goal) async {
+    await _settingsRepository.setYearlyGoal(goal);
+    _yearlyGoal = goal;
+    resetCelebrationStatus();
+    _refreshCelebrationStatus();
+    notifyListeners();
+  }
+
+  /// 检查免费版限制
+  Future<bool> canAddBook() async {
+    final count = await _repository.getTotalActiveCount();
+    return count < 999;
+  }
+
+  Future<int> getReadingBookCount() async {
+    return (await _repository.getReadingBooks()).length;
+  }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch background matching splash page gradient (#FF6B6B → #FFA8A8) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FFFF6B6B"
+                android:endColor="#FFFFA8A8"
+                android:angle="135" />
+        </shape>
+    </item>
+</layer-list>

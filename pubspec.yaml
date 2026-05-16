@@ -1,0 +1,43 @@
+name: reading_progress
+description: 把你读完的书，变成一种生命的进度
+publish_to: 'none'
+version: 2.0.2+4
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.4.2
+  path: any
+  path_provider: ^2.1.0
+  provider: ^6.1.0
+  fl_chart: ^0.69.0
+  screenshot: ^2.3.0
+  share_plus: ^13.1.0
+  in_app_purchase: ^3.1.13
+  image_picker: ^1.0.4
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+  uuid: ^4.2.2
+  shared_preferences: ^2.2.0
+  flutter_svg: ^2.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/ic_launch_logo.png"
+  adaptive_icon_background: "#FF6B6B"
+  adaptive_icon_foreground: "assets/icons/ic_launch_foreground.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,96 @@
+﻿cmd : Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+所在位置 行:8 字符: 3
++   cmd /c "cd /d $dir && flutter build apk --debug" 2>&1 | Out-File "$ ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Flutter assets ...st this source!:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Running Gradle task 'assembleDebug'...                          
+Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> Error while evaluating property 'friendPathsSet$kotlin_gradle_plugin_common' of task ':app:compileDebugKotlin'.
+   > Could not resolve all files for configuration ':app:debugCompileClasspath'.
+      > Failed to transform armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:armeabi_v7
+a_debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.grad
+le.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:armeabi_
+v7a_debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/armeabi_v7a_debug/1.
+0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Could not HEAD 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/armeabi_v7a_debug/1.0.0-4
+25cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+                  > Read timed out
+      > Failed to transform arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:arm64_v8a_de
+bug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.gradle.c
+ategory=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:arm64_v8a_
+debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/arm64_v8a_debug/1.0.
+0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Read timed out
+      > Failed to transform x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:x86_64_debug:1.
+0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.gradle.categor
+y=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:x86_64_debug:
+1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/x86_64_debug/1.0.0-4
+25cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Premature end of Content-Length delimited message body (expected: 112,731,039; received: 1,082,944)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9m 29s
+Running Gradle task 'assembleDebug'...                            570.0s
+[!] Gradle threw an error while downloading artifacts from the network.
+Retrying Gradle Build: #1, wait time: 100ms
+Running Gradle task 'assembleDebug'...                          
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> Error while evaluating property 'friendPathsSet$kotlin_gradle_plugin_common' of task ':app:compileDebugKotlin'.
+   > Could not resolve all files for configuration ':app:debugCompileClasspath'.
+      > Failed to transform armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:armeabi_v7
+a_debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.grad
+le.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:armeabi_
+v7a_debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/armeabi_v7a_debug/1.
+0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/armeabi_v7a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Read timed out
+      > Failed to transform arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:arm64_v8a_de
+bug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.gradle.c
+ategory=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:arm64_v8a_
+debug:1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/arm64_v8a_debug/1.0.
+0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/arm64_v8a_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Read timed out
+      > Failed to transform x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:x86_64_debug:1.
+0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb) to match attributes {artifactType=android-classes-jar, org.gradle.categor
+y=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}.
+         > Could not download x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar (io.flutter:x86_64_debug:
+1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb)
+            > Could not get resource 'https://storage.flutter-io.cn/download.flutter.io/io/flutter/x86_64_debug/1.0.0-4
+25cfb54d01a9472b3e81d9e76fd63a4a44cfbcb/x86_64_debug-1.0.0-425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb.jar'.
+               > Read timed out
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9m 43s
+Running Gradle task 'assembleDebug'...                            584.0s
+[!] Gradle threw an error while downloading artifacts from the network.
+Gradle task assembleDebug failed with exit code 1
