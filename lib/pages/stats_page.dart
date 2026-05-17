@@ -91,7 +91,7 @@ class StatsPage extends StatelessWidget {
                 Row(children: [
                   SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 14, height: 14),
                   const SizedBox(width: 6),
-                  const Text('最爱书籍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xCC212529))),
+                  const Text('最爱书籍', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
                 ]),
                 const SizedBox(height: 8),
                 _FavoriteBooksSection(data: favoriteBooks),
@@ -289,7 +289,7 @@ class _ProTipBar extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('基础版 · ${now.year} 年度统计', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
           const SizedBox(height: 2),
-          const Text('升级 Pro 查看全部年份阅读生涯', style: TextStyle(fontSize: 11, color: Color(0xFFE8590C))),
+          const Text('升级 Pro 查看全部年份阅读生涯', style: TextStyle(fontSize: 10, color: Color(0xFFE8590C))),
         ])),
         GestureDetector(onTap: () => Navigator.pushNamed(context, '/pro'), child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -315,7 +315,7 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(icon, style: const TextStyle(fontSize: 14)),
         const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xCC212529))),
+        Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xCC212529))),
       ],
     );
   }
@@ -382,9 +382,9 @@ class _TopCards extends StatelessWidget {
                 Text('$yearTotal 本', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFFFF6B6B), height: 1)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  const Text('已读', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF51CF66))),
-                  const Text(' · ', style: TextStyle(fontSize: 11, color: Color(0xFF868E96))),
-                  Text('目标 ${yearlyGoal > 0 ? yearlyGoal : 0} 本', style: const TextStyle(fontSize: 11, color: Color(0xFF868E96))),
+                  const Text('已读', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF51CF66))),
+                  const Text(' · ', style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+                  Text('目标 ${yearlyGoal > 0 ? yearlyGoal : 0} 本', style: const TextStyle(fontSize: 12, color: Color(0xFF868E96))),
                 ]),
               ],
             ),
@@ -467,7 +467,7 @@ class _ChartSection extends StatelessWidget {
             Row(children: [
               Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFF6B6B))),
               const SizedBox(width: 4),
-              const Text('已读', style: TextStyle(fontSize: 11, color: Color(0xFF868E96))),
+              const Text('已读', style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
             ]),
           ]),
           const SizedBox(height: 12),
@@ -485,7 +485,7 @@ class _ChartSection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       if (count > 0)
-                        Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                        Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                       const SizedBox(height: 2),
                       Container(
                         width: double.infinity,
