@@ -66,12 +66,14 @@ class StatsPage extends StatelessWidget {
                   yearlyGoal: booksProvider.yearlyGoal,
                   selectedYear: filter.selectedYear,
                   selectedMonth: filter.selectedMonth,
+                  onYearTap: () => _showYearPicker(context, filterProvider, doneBooks),
+                  onMonthTap: () => _showMonthPicker(context, filterProvider, doneBooks),
                 ),
                 const SizedBox(height: 20),
 
                 // === 2. 柱状图 ===
-                if (filter.selectedYear != null && filter.selectedMonth == null) ...[
-                  _SectionTitle(icon: '📊', text: '${filter.selectedYear}年读书数量（月份）'),
+                if (filter.selectedYear != null) ...[
+                  const Text('月度趋势', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
                   const SizedBox(height: 8),
                   _ChartSection(year: filter.selectedYear!, data: monthlyTrend),
                   const SizedBox(height: 20),
@@ -226,6 +228,42 @@ class StatsPage extends StatelessWidget {
     if (lastMonth < 1) return 0;
     return books.where((b) => b.readDate?.month == lastMonth).length;
   }
+
+  void _showYearPicker(BuildContext context, FilterProvider fp, List<Book> allBooks) {
+    final now = DateTime.now();
+    final years = allBooks.map((b) => b.readDate?.year).where((y) => y != null).toSet().toList()..sort((a, b) => b!.compareTo(a!));
+    if (!years.contains(now.year)) years.insert(0, now.year);
+    final cur = fp.state.selectedYear;
+    showModalBottomSheet(context: context, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Padding(padding: EdgeInsets.only(top: 12, bottom: 8), child: Text('选择年份', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+        const Divider(height: 1),
+        ...years.map((y) => ListTile(title: Text('${y}年', textAlign: TextAlign.center), trailing: y == cur ? const Icon(Icons.check, size: 18, color: Color(0xFFFF6B6B)) : null, onTap: () { fp.setYear(y!); Navigator.pop(ctx); })),
+      ])),
+    );
+  }
+
+  void _showMonthPicker(BuildContext context, FilterProvider fp, List<Book> allBooks) {
+    final now = DateTime.now();
+    final items = [_MonthOption(label: '全部', value: null), ...List.generate(now.month, (i) => _MonthOption(label: '${i + 1}月', value: i + 1))];
+    showModalBottomSheet(context: context, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Padding(padding: EdgeInsets.only(top: 12, bottom: 8), child: Text('选择月份', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+        const Divider(height: 1),
+        ...items.map((item) => ListTile(
+          title: Text(item.label, textAlign: TextAlign.center),
+          trailing: fp.state.selectedMonth == item.value ? const Icon(Icons.check, size: 18, color: Color(0xFFFF6B6B)) : null,
+          onTap: () { if (item.value == null) { fp.setMonth(null); } else { fp.setMonth(item.value!); } Navigator.pop(ctx); },
+        )),
+      ])),
+    );
+  }
+}
+
+class _MonthOption {
+  final String label;
+  final int? value;
+  const _MonthOption({required this.label, this.value});
 }
 
 // ============ Pro 提示条 ============
@@ -298,6 +336,8 @@ class _TopCards extends StatelessWidget {
   final int yearlyGoal;
   final int? selectedYear;
   final int? selectedMonth;
+  final VoidCallback onYearTap;
+  final VoidCallback onMonthTap;
 
   const _TopCards({
     required this.currentMonthCount,
@@ -306,13 +346,15 @@ class _TopCards extends StatelessWidget {
     required this.yearlyGoal,
     required this.selectedYear,
     required this.selectedMonth,
+    required this.onYearTap,
+    required this.onMonthTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // 左卡：月份统计数据
+        // 左卡：年度统计数据（年份可下拉）
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -323,32 +365,39 @@ class _TopCards extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
               ),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(selectedMonth != null ? '$selectedMonth月' : '本月',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: onYearTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.15))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(selectedYear != null ? '$selectedYear' : '全部', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                        const SizedBox(width: 2),
+                        const Text('▾', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                      ]),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('$currentMonthCount 本',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, height: 1)),
+                Text('$yearTotal 本', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFFFF6B6B), height: 1)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  Text(diff >= 0 ? '↑' : '↓',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                          color: diff >= 0 ? AppColors.success : const Color(0xFFFA5252))),
-                  const SizedBox(width: 4),
-                  Text(diff >= 0 ? '较上月 +$diff 本' : '较上月 $diff 本',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                          color: diff >= 0 ? AppColors.success : const Color(0xFFFA5252))),
+                  const Text('已读', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF51CF66))),
+                  const Text(' · ', style: TextStyle(fontSize: 11, color: Color(0xFF868E96))),
+                  Text('目标 ${yearlyGoal > 0 ? yearlyGoal : 0} 本', style: const TextStyle(fontSize: 11, color: Color(0xFF868E96))),
                 ]),
               ],
             ),
           ),
         ),
         const SizedBox(width: 12),
-        // 右卡：年度统计数据
+        // 右卡：月份统计数据
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -359,21 +408,33 @@ class _TopCards extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
               ),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(selectedYear != null ? '$selectedYear年' : '全部',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: onMonthTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.15))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(selectedMonth != null ? '$selectedMonth月' : '全部', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                        const SizedBox(width: 2),
+                        const Text('▾', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                      ]),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('$yearTotal 本',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, height: 1)),
-                if (selectedYear == DateTime.now().year) ...[
-                  const SizedBox(height: 6),
-                  Text('${yearlyGoal > 0 ? (yearTotal / yearlyGoal * 100).toInt() : 0}% 完成',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
-                ],
+                Text('$currentMonthCount 本', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFFFF6B6B), height: 1)),
+                const SizedBox(height: 6),
+                Row(children: [
+                  Text(diff >= 0 ? '↑' : '↓', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: diff >= 0 ? const Color(0xFF51CF66) : const Color(0xFFFA5252))),
+                  const SizedBox(width: 4),
+                  Text(diff >= 0 ? '较上月 +$diff 本' : '较上月 $diff 本', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: diff >= 0 ? const Color(0xFF51CF66) : const Color(0xFFFA5252))),
+                ]),
               ],
             ),
           ),
