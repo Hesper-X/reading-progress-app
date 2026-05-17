@@ -181,14 +181,16 @@ class StatsPage extends StatelessWidget {
     final valid = books.where((b) => b.readingCycleDays != null && b.readingCycleDays! > 0).toList();
     if (valid.isEmpty) return null;
     valid.sort((a, b) => b.readingCycleDays!.compareTo(a.readingCycleDays!));
-    return {'title': valid.first.title, 'author': valid.first.author, 'days': valid.first.readingCycleDays};
+    final book = valid.first;
+    return {'title': book.title, 'author': book.author, 'days': book.readingCycleDays, 'startDate': book.formattedStartDate, 'endDate': book.formattedReadDate};
   }
 
   Map<String, dynamic>? _computeShortest(List<Book> books) {
     final valid = books.where((b) => b.readingCycleDays != null && b.readingCycleDays! > 0).toList();
     if (valid.isEmpty) return null;
     valid.sort((a, b) => a.readingCycleDays!.compareTo(b.readingCycleDays!));
-    return {'title': valid.first.title, 'author': valid.first.author, 'days': valid.first.readingCycleDays};
+    final book = valid.first;
+    return {'title': book.title, 'author': book.author, 'days': book.readingCycleDays, 'startDate': book.formattedStartDate, 'endDate': book.formattedReadDate};
   }
 
   List<Book> _computeReadList(List<Book> books) {
@@ -604,42 +606,56 @@ class _LongestShortestSection extends StatelessWidget {
     if (longest == null && shortest == null) {
       return _EmptyCard(text: '暂无阅读数据');
     }
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE2E6)),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _DurationItem(icon: '📘', label: '最长', book: longest)),
-          Container(width: 1, height: 40, color: const Color(0xFFF1F3F5)),
-          Expanded(child: _DurationItem(icon: '📗', label: '最短', book: shortest)),
-        ],
-      ),
+    return Column(
+      children: [
+        _TimeCompareItem(label: '最长', labelColor: const Color(0xFFFF6B6B), daysColor: const Color(0xFFFF6B6B), icon: '📘', book: longest!),
+        Container(height: 1, color: const Color(0xFFF1F3F5)),
+        _TimeCompareItem(label: '最短', labelColor: const Color(0xFF51CF66), daysColor: const Color(0xFF51CF66), icon: '📗', book: shortest!),
+      ],
     );
   }
 }
 
-class _DurationItem extends StatelessWidget {
-  final String icon;
+class _TimeCompareItem extends StatelessWidget {
   final String label;
-  final Map<String, dynamic>? book;
+  final Color labelColor;
+  final Color daysColor;
+  final String icon;
+  final Map<String, dynamic> book;
 
-  const _DurationItem({required this.icon, required this.label, required this.book});
+  const _TimeCompareItem({required this.label, required this.labelColor, required this.daysColor, required this.icon, required this.book});
 
   @override
   Widget build(BuildContext context) {
-    if (book == null) return const SizedBox();
-    return Column(
-      children: [
-        Text('$icon $label', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        const SizedBox(height: 6),
-        Text('《${book!['title']}》', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-            maxLines: 1, overflow: TextOverflow.ellipsis),
-        Text('${book!['days']}天', style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
-      ],
+    final title = book['title'] as String;
+    final days = book['days'];
+    final startDate = book['startDate'] as String? ?? '';
+    final endDate = book['endDate'] as String? ?? '';
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$icon $label', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: labelColor)),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text('《$title》',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF212529)),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              Text('共读 $days 天', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: daysColor)),
+            ],
+          ),
+          if (startDate.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('$startDate → $endDate', style: const TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+            ),
+        ],
+      ),
     );
   }
 }
