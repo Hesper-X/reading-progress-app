@@ -271,38 +271,28 @@ class _MonthOption {
 class _ProTipBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFFFFD43B).withValues(alpha: 0.15), const Color(0xFFFF922B).withValues(alpha: 0.1)],
-        ),
+        color: const Color(0xFFFFF5F5),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFD43B).withValues(alpha: 0.4)),
+        border: Border.all(color: const Color(0xFFFFD4D4)),
       ),
-      child: Row(
-        children: [
-          const Text('⭐', style: TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text('开通Pro查看全生涯数据及分享图',
-                style: TextStyle(fontSize: 13, color: Color(0xFFE67700))),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/pro'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B6B),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Text('升级', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
-            ),
-          ),
-        ],
-      ),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('基础版 · ${now.year} 年度统计', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+          const SizedBox(height: 2),
+          const Text('升级 Pro 查看全部年份阅读生涯', style: TextStyle(fontSize: 11, color: Color(0xFFE8590C))),
+        ])),
+        GestureDetector(onTap: () => Navigator.pushNamed(context, '/pro'), child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: const Color(0xFFFF6B6B), borderRadius: BorderRadius.circular(16)),
+          child: const Text('升级', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+        )),
+      ]),
     );
   }
 }
@@ -310,7 +300,7 @@ class _ProTipBar extends StatelessWidget {
 // ============ 模块标题 ============
 
 class _SectionTitle extends StatelessWidget {
-  final String icon; // Emoji，开发实现可用 SVG
+  final String icon;
   final String text;
 
   const _SectionTitle({required this.icon, required this.text});
