@@ -109,8 +109,7 @@ class StatsPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // === 6. 最爱作者 Top3 ===
-                _SectionTitle(icon: '👥', text: '最爱作者'),
-                const SizedBox(height: 8),
+                // 标题由 _FavoriteAuthorsSection 内部渲染
                 _FavoriteAuthorsSection(data: favoriteAuthors),
                 const SizedBox(height: 20),
 
@@ -739,12 +738,43 @@ class _FavoriteAuthorsSection extends StatelessWidget {
     if (data.isEmpty) {
       return _EmptyCard(text: '暂无最爱作者数据');
     }
-    final items = data.map((d) => _RankItemData(
-      rank: data.indexOf(d) + 1,
-      title: d['author'] as String,
-      subtitle: '${d['count']}本',
-    )).toList();
-    return _RankList(items: items);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          SvgPicture.asset('assets/icons/stat-icon-fav-authors.svg', width: 14, height: 14),
+          const SizedBox(width: 4),
+          const Text('最爱作者', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+        ]),
+        const SizedBox(height: 10),
+        ...List.generate(data.length > 3 ? 3 : data.length, (i) {
+          final d = data[i];
+          final isLast = i >= ((data.length > 3 ? 3 : data.length) - 1);
+          final rankColors = [const Color(0xFFFF6B6B), const Color(0xFF51CF66), const Color(0xFF339AF0)];
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              border: !isLast ? const Border(bottom: BorderSide(color: Color(0xFFF1F3F5))) : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: rankColors[i > 2 ? 2 : i]),
+                  child: Center(child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(d['author'] as String, style: const TextStyle(fontSize: 14, color: Color(0xFF212529)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+                Text('读了 ${d['count']} 本', style: const TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
   }
 }
 
