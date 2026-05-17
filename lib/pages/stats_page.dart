@@ -113,9 +113,8 @@ class StatsPage extends StatelessWidget {
                 _FavoriteAuthorsSection(data: favoriteAuthors),
                 const SizedBox(height: 20),
 
-                // === 底部按钮（Pro版「我的阅读生涯」） ===
-                if (filter.isPro)
-                  _CareerButton(
+                // === 底部按钮「我的阅读生涯」 ===
+                _CareerButton(
                     onTap: () {
                       // 跳转分享Tab，切到全部年份
                       filterProvider.switchToAllYears();
@@ -874,21 +873,17 @@ class _CareerButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
-          ),
+          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFFFF6B6B),
           boxShadow: [
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(color: const Color(0xFFFF6B6B).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
           ],
         ),
         child: const Center(
-          child: Text('📚 我的阅读生涯',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+          child: Text('我的阅读生涯',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
         ),
       ),
     );
