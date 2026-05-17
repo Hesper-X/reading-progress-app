@@ -669,8 +669,7 @@ class _ReadListSection extends StatelessWidget {
     if (books.isEmpty) {
       return _EmptyCard(text: '还没有读完的书');
     }
-    // 提取月份标签：2026年5月
-    String formatMonth(DateTime d) => '${d.year}年${d.month}月';
+    String formatFullDate(DateTime d) => '${d.year}年${d.month}月${d.day}日';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,7 +711,7 @@ class _ReadListSection extends StatelessWidget {
                 const SizedBox(width: 10),
                 // 作者 · 年月
                 Expanded(
-                  child: Text('${book.author} · ${book.readDate != null ? formatMonth(book.readDate!) : ""}',
+                  child: Text('${book.author} · ${book.readDate != null ? formatFullDate(book.readDate!) : ""}',
                       style: const TextStyle(fontSize: 12, color: Color(0xFF868E96)),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
