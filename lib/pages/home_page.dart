@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
+import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 
@@ -262,8 +263,11 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: GestureDetector(
                     onTap: () {
-                      context.read<BooksProvider>().markShareClicked();
-                      // 跳转到分享Tab，筛选锁定当年+无月份
+                      try {
+                        context.read<BooksProvider>().markShareClicked();
+                        // 跳转到分享Tab，筛选锁定当年+无月份
+                        context.read<FilterProvider>().resetToDefault();
+                      } catch (_) {}
                       Navigator.pushNamed(context, AppRoutes.share);
                     },
                     child: Container(
@@ -677,7 +681,9 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
                 _dismissed = true;
                 _controller.stop();
                 widget.onClose();
-                _doShare(context);
+                // 跳转到分享Tab，筛选锁定当年+无月份
+                context.read<FilterProvider>().resetToDefault();
+                Navigator.pushNamed(context, AppRoutes.share);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(

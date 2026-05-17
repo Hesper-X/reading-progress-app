@@ -106,7 +106,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('取消'),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFDEE2E6)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                          foregroundColor: const Color(0xFF868E96),
+                        ),
+                        child: const Text('取消', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
                       ),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, tempGoal),

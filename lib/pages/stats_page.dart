@@ -40,6 +40,7 @@ class StatsPage extends StatelessWidget {
 
           // 各项计算
           final monthlyTrend = _computeMonthlyTrend(scopeList);
+          final yearlyTrend = _computeYearlyTrend(doneBooks);
           final favoriteBooks = _computeFavoriteBooks(scopeList);
           final longest = _computeLongest(scopeList);
           final shortest = _computeShortest(scopeList);
@@ -48,6 +49,9 @@ class StatsPage extends StatelessWidget {
           final currentMonthCount = _computeCurrentMonthCount(scopeList);
           final lastMonthCount = _computeLastMonthCount(scopeList);
           final diff = currentMonthCount - lastMonthCount;
+
+          // 判断当前是否为"全部年份"模式（年模式）
+          final isYearMode = filter.selectedYear == null && filter.isPro;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -66,23 +70,21 @@ class StatsPage extends StatelessWidget {
                   yearlyGoal: booksProvider.yearlyGoal,
                   selectedYear: filter.selectedYear,
                   selectedMonth: filter.selectedMonth,
+                  isYearMode: isYearMode,
+                  onMonthTap: isYearMode
+                      ? () => _showYearPicker(context, filterProvider)
+                      : null,
                 ),
                 const SizedBox(height: 20),
 
                 // === 2. 柱状图 ===
-                if (filter.selectedYear != null && filter.selectedMonth == null) ...[
-                  _SectionTitle(icon: '📊', text: '${filter.selectedYear}年读书数量（月份）'),
-                  const SizedBox(height: 8),
-                  _ChartSection(year: filter.selectedYear!, data: monthlyTrend),
-                  const SizedBox(height: 20),
-                ],
-
-                if (filter.selectedYear == null && filter.isPro) ...[
-                  _SectionTitle(icon: '📊', text: '全部·各年对比'),
-                  const SizedBox(height: 8),
-                  _YearlyChart(data: monthlyTrend),
-                  const SizedBox(height: 20),
-                ],
+                _ChartSection(
+                  isYearMode: isYearMode,
+                  year: filter.selectedYear,
+                  monthlyData: monthlyTrend,
+                  yearlyData: yearlyTrend,
+                ),
+                const SizedBox(height: 20),
 
                 // === 3. 最爱书籍 Top3 ===
                 _SectionTitle(icon: '📖', text: '最爱书籍'),
@@ -126,6 +128,130 @@ class StatsPage extends StatelessWidget {
     );
   }
 
+  // ============ 年份选择弹窗（Pro 版新增"全部年份"选项） ============
+
+  void _showYearPicker(BuildContext context, FilterProvider filterProvider) {
+    final years = filterProvider.availableYears;
+    final currentSelection = filterProvider.selectedYear;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('选择年份', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              // "全部年份"选项（Pro版专有）
+              if (filterProvider.isPro) ...[
+                GestureDetector(
+                  onTap: () {
+                    filterProvider.setYear(null);
+                    filterProvider.setMonth(null);
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: currentSelection == null
+                          ? const Color(0xFFFF6B6B).withValues(alpha: 0.1)
+                          : Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 18,
+                          color: currentSelection == null ? AppColors.primary : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '全部年份（生涯数据）',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: currentSelection == null ? FontWeight.w600 : FontWeight.w400,
+                            color: currentSelection == null ? AppColors.primary : AppColors.textPrimary,
+                          ),
+                        ),
+                        if (currentSelection == null) ...[
+                          const Spacer(),
+                          const Icon(Icons.check, size: 18, color: AppColors.primary),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+              ],
+              ...years.map((year) {
+                final isSelected = year == currentSelection;
+                return GestureDetector(
+                  onTap: () {
+                    filterProvider.setYear(year);
+                    filterProvider.setMonth(null);
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: isSelected
+                          ? const Color(0xFFFF6B6B).withValues(alpha: 0.1)
+                          : Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$year年',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const Spacer(),
+                          const Icon(Icons.check, size: 18, color: AppColors.primary),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF1F3F5),
+                    foregroundColor: AppColors.textSecondary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('取消'),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ============ 数据计算函数 ============
 
   Iterable<Book> _filterBooks(List<Book> books, int? year, int? month) {
@@ -141,6 +267,17 @@ class StatsPage extends StatelessWidget {
     for (final b in books) {
       if (b.readDate != null) {
         trend[b.readDate!.month] = (trend[b.readDate!.month] ?? 0) + 1;
+      }
+    }
+    return trend;
+  }
+
+  Map<int, int> _computeYearlyTrend(List<Book> books) {
+    final trend = <int, int>{};
+    for (final b in books) {
+      if (b.readDate != null) {
+        final y = b.readDate!.year;
+        trend[y] = (trend[y] ?? 0) + 1;
       }
     }
     return trend;
@@ -298,6 +435,8 @@ class _TopCards extends StatelessWidget {
   final int yearlyGoal;
   final int? selectedYear;
   final int? selectedMonth;
+  final bool isYearMode;
+  final VoidCallback? onMonthTap;
 
   const _TopCards({
     required this.currentMonthCount,
@@ -306,6 +445,8 @@ class _TopCards extends StatelessWidget {
     required this.yearlyGoal,
     required this.selectedYear,
     required this.selectedMonth,
+    this.isYearMode = false,
+    this.onMonthTap,
   });
 
   @override
@@ -328,7 +469,9 @@ class _TopCards extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(selectedMonth != null ? '$selectedMonth月' : '本月',
+                Text(selectedMonth != null
+                    ? '$selectedMonth月'
+                    : (isYearMode ? '全部年份' : '本月'),
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 const SizedBox(height: 8),
                 Text('$currentMonthCount 本',
@@ -350,31 +493,34 @@ class _TopCards extends StatelessWidget {
         const SizedBox(width: 12),
         // 右卡：年度统计数据
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
+          child: GestureDetector(
+            onTap: isYearMode ? onMonthTap : null,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
+                ),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
               ),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(selectedYear != null ? '$selectedYear年' : '全部',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-                Text('$yearTotal 本',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, height: 1)),
-                if (selectedYear == DateTime.now().year) ...[
-                  const SizedBox(height: 6),
-                  Text('${yearlyGoal > 0 ? (yearTotal / yearlyGoal * 100).toInt() : 0}% 完成',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(selectedYear != null ? '$selectedYear年' : '全部',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 8),
+                  Text('$yearTotal 本',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, height: 1)),
+                  if (!isYearMode && selectedYear == DateTime.now().year) ...[
+                    const SizedBox(height: 6),
+                    Text('${yearlyGoal > 0 ? (yearTotal / yearlyGoal * 100).toInt() : 0}% 完成',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -386,10 +532,54 @@ class _TopCards extends StatelessWidget {
 // ============ 柱状图 ============
 
 class _ChartSection extends StatelessWidget {
+  final bool isYearMode;
+  final int? year;
+  final Map<int, int> monthlyData;
+  final Map<int, int> yearlyData;
+
+  const _ChartSection({
+    this.isYearMode = false,
+    this.year,
+    required this.monthlyData,
+    required this.yearlyData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isYearMode) {
+      // 年模式：显示年度趋势（各年份对比）
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(icon: '📊', text: '全部·各年对比'),
+          const SizedBox(height: 8),
+          _YearChart(data: yearlyData),
+        ],
+      );
+    } else if (year != null) {
+      // 月模式：显示12个月
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(icon: '📊', text: '${year}年读书数量（月份）'),
+          const SizedBox(height: 8),
+          _MonthChart(year: year!, data: monthlyData),
+        ],
+      );
+    } else {
+      // 基础版无年份选择：空
+      return const SizedBox.shrink();
+    }
+  }
+}
+
+// ============ 月柱状图 ============
+
+class _MonthChart extends StatelessWidget {
   final int year;
   final Map<int, int> data;
 
-  const _ChartSection({required this.year, required this.data});
+  const _MonthChart({required this.year, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -414,18 +604,15 @@ class _ChartSection extends StatelessWidget {
             final month = i + 1;
             final count = data[month] ?? 0;
             final isPastOrCurrent = month <= currentMonth;
-            // 高度：5本=140px，每本28px
             final barHeight = (count / chartMaxY * 140.0);
 
             return Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // 数字
                   if (count > 0)
                     Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                   const SizedBox(height: 2),
-                  // 柱子（宽度44px）
                   Container(
                     width: 44,
                     height: barHeight.clamp(4.0, 140.0),
@@ -447,7 +634,6 @@ class _ChartSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // 月份纯数字标签
                   Text('$month', style: TextStyle(fontSize: 10, color: isPastOrCurrent ? AppColors.textSecondary : AppColors.textMuted)),
                 ],
               ),
@@ -461,22 +647,63 @@ class _ChartSection extends StatelessWidget {
 
 // ============ 年度对比柱状图（Pro） ============
 
-class _YearlyChart extends StatelessWidget {
+class _YearChart extends StatelessWidget {
   final Map<int, int> data;
 
-  const _YearlyChart({required this.data});
+  const _YearChart({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    // 简化：按年份列出
+    final maxVal = data.values.reduce((a, b) => a > b ? a : b);
+    final chartMaxY = maxVal > 0 ? maxVal + 2.0 : 10.0;
+    final sortedYears = data.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDEE2E6)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)],
       ),
-      child: const Center(child: Text('生日模式柱状图（Pro）', style: TextStyle(fontSize: 14, color: AppColors.textMuted))),
+      child: SizedBox(
+        height: 160,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: sortedYears.map((entry) {
+            final count = entry.value;
+            final barHeight = (count / chartMaxY * 140.0);
+
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (count > 0)
+                    Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                  const SizedBox(height: 2),
+                  Container(
+                    width: 44,
+                    height: barHeight.clamp(4.0, 140.0),
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(4),
+                      ),
+                      gradient: const LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('${entry.key}', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }

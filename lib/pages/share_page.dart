@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +37,9 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _textController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -134,7 +138,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
           bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1),
         ),
         title: const Text(
-          '分享',
+          '分享我的读书进度',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         ),
       ),
@@ -145,19 +149,17 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
             padding: const EdgeInsets.all(20),
             child: Column(
                 children: [
-                  // === 预览卡片 ===
-                  RepaintBoundary(
-                    key: _previewKey,
-                    child: _SharePreviewCard(
-                      customText: _textController.text.isNotEmpty
-                          ? _textController.text
-                          : null,
-                      filterState: filterState,
-                      showFavoriteBooks: _showFavoriteBooks,
-                      showLongestShortest: _showLongestShortest,
-                      showReadList: _showReadList,
-                      showFavoriteAuthors: _showFavoriteAuthors,
-                    ),
+                  // === 预览卡片（粉色框外可见，仅红色渐变图内部可截图） ===
+                  _SharePreviewCard(
+                    previewKey: _previewKey,
+                    customText: _textController.text.isNotEmpty
+                        ? _textController.text
+                        : null,
+                    filterState: filterState,
+                    showFavoriteBooks: _showFavoriteBooks,
+                    showLongestShortest: _showLongestShortest,
+                    showReadList: _showReadList,
+                    showFavoriteAuthors: _showFavoriteAuthors,
                   ),
                   const SizedBox(height: 16),
                   // === 进度环规则提示（黄色气泡） ===
@@ -173,7 +175,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                   _CharInputField(
                     controller: _textController,
                     focusNode: _focusNode,
-                    hintText: '今年读的书，配得上野心吗？',
+                    hintText: '今年读的书，配得上你的野心吗？',
                     maxLength: 200,
                   ),
                   const SizedBox(height: 20),
@@ -245,6 +247,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
 // ============ 分享预览卡片 ============
 
 class _SharePreviewCard extends StatefulWidget {
+  final GlobalKey previewKey;
   final String? customText;
   final FilterState filterState;
   final bool showFavoriteBooks;
@@ -253,6 +256,7 @@ class _SharePreviewCard extends StatefulWidget {
   final bool showFavoriteAuthors;
 
   const _SharePreviewCard({
+    required this.previewKey,
     required this.customText,
     required this.filterState,
     required this.showFavoriteBooks,
@@ -320,24 +324,13 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 标题行（含庆祝装饰）
-          Row(
-            children: [
-              if (isCelebration) ...[
-                const Text('🎉', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 4),
-                const Text('🎊', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                filter.dynamicTitle,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // 分享卡片主体（红色渐变）
-          Container(
+          // === 预览大标题 ===
+          const Center(child: Text('分享预览', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF212529)))),
+          const SizedBox(height: 24),
+          // 分享卡片主体（红色渐变）—— 此区域用于截图生成
+          RepaintBoundary(
+            key: widget.previewKey,
+            child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -350,6 +343,18 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
             ),
             child: Column(
               children: [
+                // === 标题行：2026 读书进度条 ===
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.menu_book, size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 // === 进度环 或 精简模式 ===
                 if (_showRing) ...[
                   // 标准模式：进度环
@@ -370,7 +375,7 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text('已读完 $readCount / $totalCount本',
-                          style: const TextStyle(fontSize: 14, color: Colors.white)),
+                          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
                       if (isCelebration) ...[
                         const SizedBox(width: 8),
                         Container(
@@ -395,34 +400,43 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   Text('本书已读完', style: const TextStyle(fontSize: 16, color: Colors.white70)),
                 ],
 
-                // === 用户自定义文案 ===
-                if (widget.customText != null && widget.customText!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(widget.customText!, textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
-                ],
+                // === 用户自定义文案（在已读数和统计模块之间，无输入时显示hint示例） ===
+                const SizedBox(height: 8),
+                Text(
+                  widget.customText ?? '今年读的书，配得上你的野心吗？',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: widget.customText != null
+                        ? const Color(0xB3FFFFFF)
+                        : const Color(0x55FFFFFF),
+                  ),
+                ),
 
-                // === 统计模块 ===
-                const SizedBox(height: 12),
+                // === 统计模块（分割线+容器，同高保真） ===
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.white30, width: 1)),
+                  ),
+                  padding: const EdgeInsets.only(top: 14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 if (widget.showFavoriteBooks && favBooks.isNotEmpty)
-                  _buildModule('📖 最爱书籍', favBooks.map((b) =>
-                      '${b['title']} · ${b['author']}（${b['read_count'] ?? 1}次）').join('\n')),
+                  _ShareFavBooks(data: favBooks),
                 if (widget.showLongestShortest && longest != null)
-                  _buildModule('⏱ 最长与最短',
-                      '最长《${longest['title']}》${longest['days']}天\n最短《${shortest?['title'] ?? longest['title']}》${shortest?['days'] ?? longest['days']}天'),
+                  _ShareDurSection(longest: longest!, shortest: shortest ?? longest!),
                 if (widget.showReadList && readList.isNotEmpty)
-                  _buildModule('📉 已读书单',
-                      readList.take(5).map((b) => '${b.title} · ${b.formattedReadDate ?? ''}').join('\n')),
+                  _ShareReadList(books: readList.take(5).toList()),
                 if (widget.showFavoriteAuthors && favAuthors.isNotEmpty)
-                  _buildModule('👥 最爱作者', favAuthors.map((a) => '${a['author']} · ${a['book_count']}本').join('\n')),
+                  _ShareFavAuthors(data: favAuthors),
+                  ]),
+                ),
 
-                // === 品牌水印 ===
-                const SizedBox(height: 16),
-                const Divider(color: Colors.white30, height: 1),
-                const SizedBox(height: 12),
+                // === 品牌水印（无分割线） ===
+                const SizedBox(height: 6),
                 const Text('来自读书进度条 App',
                     style: TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 const Text(
                   '把你读完的书，变成一种生命的进度',
                   style: TextStyle(fontSize: 11, color: Color(0x8CFFFFFF)),
@@ -430,24 +444,13 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
               ],
             ),
           ),
+        ),
         ],
       ),
     );
   }
 
-  Widget _buildModule(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
-          const SizedBox(height: 2),
-          Text(content, style: const TextStyle(fontSize: 10, color: Colors.white70)),
-        ],
-      ),
-    );
-  }
+  // _buildModule 已替换为下方独立组件
 
   List<Map<String, dynamic>> _computeFavoriteBooks(List<Book> books) {
     final grouped = <String, List<Book>>{};
@@ -566,28 +569,28 @@ class _ModuleSwitches extends StatelessWidget {
       child: Column(
         children: [
           _SwitchRow(
-            icon: '📖',
+            icon: SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 18, height: 18, colorFilter: const ColorFilter.mode(Color(0xFFFF6B6B), BlendMode.srcIn)),
             label: '最爱书籍',
             value: showFavoriteBooks,
             onChanged: (v) => onToggle('favoriteBooks', v),
           ),
           const Divider(height: 1, color: Color(0xFFF1F3F5)),
           _SwitchRow(
-            icon: '⏱',
+            icon: const Text('⏱', style: TextStyle(fontSize: 18, color: Color(0xFFFF6B6B))),
             label: '最长与最短',
             value: showLongestShortest,
             onChanged: (v) => onToggle('longestShortest', v),
           ),
           const Divider(height: 1, color: Color(0xFFF1F3F5)),
           _SwitchRow(
-            icon: '📉',
+            icon: SvgPicture.asset('assets/icons/stat-icon-read-list.svg', width: 18, height: 18, colorFilter: const ColorFilter.mode(Color(0xFFFF6B6B), BlendMode.srcIn)),
             label: '已读书单',
             value: showReadList,
             onChanged: (v) => onToggle('readList', v),
           ),
           const Divider(height: 1, color: Color(0xFFF1F3F5)),
           _SwitchRow(
-            icon: '👥',
+            icon: SvgPicture.asset('assets/icons/stat-icon-fav-authors.svg', width: 18, height: 18, colorFilter: const ColorFilter.mode(Color(0xFFFF6B6B), BlendMode.srcIn)),
             label: '最爱作者',
             value: showFavoriteAuthors,
             onChanged: (v) => onToggle('favoriteAuthors', v),
@@ -599,7 +602,7 @@ class _ModuleSwitches extends StatelessWidget {
 }
 
 class _SwitchRow extends StatelessWidget {
-  final String icon;
+  final Widget icon;
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -617,7 +620,7 @@ class _SwitchRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 16)),
+          icon,
           const SizedBox(width: 10),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary))),
           SizedBox(
@@ -759,7 +762,12 @@ class _ShareModal extends StatelessWidget {
                   onTap: onEdit,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: const Center(child: Text('重新编辑', style: TextStyle(fontSize: 15, color: Color(0xFFADB5BD)))),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: const Color(0xFFDEE2E6)),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(child: Text('重新编辑', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF868E96)))),
                   ),
                 ),
               ),
@@ -884,4 +892,155 @@ class _ShareRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ShareRingPainter oldDelegate) =>
       oldDelegate.progress != progress;
+}
+
+// ==================== 分享统计模块组件 ====================
+
+Color _rankColor(int r) => [
+  const Color(0xFFFF6B6B), const Color(0xFF51CF66), const Color(0xFF339AF0), const Color(0xFFCED4DA)
+][(r - 1).clamp(0, 3)];
+
+/// 最爱书籍
+class _ShareFavBooks extends StatelessWidget {
+  final List<Map<String, dynamic>> data;
+  const _ShareFavBooks({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 12, height: 12, colorFilter: const ColorFilter.mode(Colors.white70, BlendMode.srcIn)),
+          const SizedBox(width: 4),
+          const Text('最爱书籍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+        ]),
+        const SizedBox(height: 4),
+        ...data.map((d) {
+          final idx = data.indexOf(d) + 1;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(shape: BoxShape.circle, color: _rankColor(idx)),
+                child: Center(child: Text('$idx', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)))),
+              const SizedBox(width: 6),
+              Expanded(child: Text('《${d['title']}》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 4),
+              Text('读${d['read_count']}次', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
+}
+
+/// 最长最短（两列并排）
+class _ShareDurSection extends StatelessWidget {
+  final Map<String, dynamic> longest, shortest;
+  const _ShareDurSection({required this.longest, required this.shortest});
+
+  @override
+  Widget build(BuildContext context) {
+    final lt = longest['title'] as String? ?? '';
+    final ld = (longest['days'] as int?) ?? 0;
+    final st = shortest['title'] as String? ?? '';
+    final sd = (shortest['days'] as int?) ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Text('⏱', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          const SizedBox(width: 4),
+          const Text('最长与最短', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+        ]),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            // 左列：最长
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('📘 最长', style: TextStyle(fontSize: 10, color: Colors.white54)),
+                const SizedBox(height: 2),
+                Text('《$lt》· ${ld}天', style: const TextStyle(fontSize: 10, color: Colors.white70)),
+              ]),
+            ),
+            // 右列：最短
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('📗 最短', style: TextStyle(fontSize: 10, color: Colors.white54)),
+                const SizedBox(height: 2),
+                Text('《$st》· ${sd}天', style: const TextStyle(fontSize: 10, color: Colors.white70)),
+              ]),
+            ),
+          ],
+        ),
+      ]),
+    );
+  }
+}
+
+/// 已读书单（横向灰色标签，带《》书名号）
+class _ShareReadList extends StatelessWidget {
+  final List<Book> books;
+  const _ShareReadList({required this.books});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          SvgPicture.asset('assets/icons/stat-icon-read-list.svg', width: 12, height: 12, colorFilter: const ColorFilter.mode(Colors.white70, BlendMode.srcIn)),
+          const SizedBox(width: 4),
+          const Text('已读书单', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+        ]),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6, runSpacing: 4,
+          children: books.map((b) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+            child: Text('《${b.title}》', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+          )).toList(),
+        ),
+      ]),
+    );
+  }
+}
+
+/// 最爱作者
+class _ShareFavAuthors extends StatelessWidget {
+  final List<Map<String, dynamic>> data;
+  const _ShareFavAuthors({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          SvgPicture.asset('assets/icons/stat-icon-fav-authors.svg', width: 12, height: 12, colorFilter: const ColorFilter.mode(Colors.white70, BlendMode.srcIn)),
+          const SizedBox(width: 4),
+          const Text('最爱作者', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+        ]),
+        const SizedBox(height: 4),
+        ...data.map((d) {
+          final idx = data.indexOf(d) + 1;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(shape: BoxShape.circle, color: _rankColor(idx)),
+                child: Center(child: Text('$idx', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)))),
+              const SizedBox(width: 6),
+              Expanded(child: Text('${d['author']}', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 4),
+              Text('${d['book_count']}本', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
 }
