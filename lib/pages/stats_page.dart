@@ -104,8 +104,7 @@ class StatsPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // === 5. 已读书单 ===
-                _SectionTitle(icon: '📉', text: '已读书单'),
-                const SizedBox(height: 8),
+                // 标题由 _ReadListSection 内部渲染
                 _ReadListSection(books: readList),
                 const SizedBox(height: 20),
 
@@ -672,40 +671,58 @@ class _ReadListSection extends StatelessWidget {
     if (books.isEmpty) {
       return _EmptyCard(text: '还没有读完的书');
     }
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE2E6)),
-      ),
-      child: Column(
-        children: books.take(10).map((book) => _ReadListItem(book: book)).toList(),
-      ),
-    );
-  }
-}
+    // 提取月份标签：2026年5月
+    String formatMonth(DateTime d) => '${d.year}年${d.month}月';
 
-class _ReadListItem extends StatelessWidget {
-  final Book book;
-  const _ReadListItem({required this.book});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: const Color(0xFFF1F3F5))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(book.title, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          if (book.formattedReadDate != null)
-            Text(book.formattedReadDate!, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题行
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(children: [
+              SvgPicture.asset('assets/icons/stat-icon-read-list.svg', width: 14, height: 14),
+              const SizedBox(width: 4),
+              const Text('已读书单', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+            ]),
+            Text('共 ${books.length} 本', style: const TextStyle(fontSize: 12, color: Color(0xFFADB5BD), fontWeight: FontWeight.w500)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // 书籍列表
+        ...List.generate(books.length > 10 ? 10 : books.length, (i) {
+          final book = books[i];
+          final isLast = i >= (books.length > 10 ? 9 : books.length - 1);
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              border: !isLast ? const Border(bottom: BorderSide(color: Color(0xFFF1F3F5))) : null,
+            ),
+            child: Row(
+              children: [
+                // 灰色序号圆圈
+                Container(
+                  width: 22, height: 22,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFCED4DA)),
+                  child: Center(child: Text('${i + 1}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white))),
+                ),
+                const SizedBox(width: 10),
+                // 书名
+                Text('《${book.title}》', style: const TextStyle(fontSize: 14, color: Color(0xFF212529)),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(width: 10),
+                // 作者 · 年月
+                Expanded(
+                  child: Text('${book.author} · ${book.readDate != null ? formatMonth(book.readDate!) : ""}',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF868E96)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }
