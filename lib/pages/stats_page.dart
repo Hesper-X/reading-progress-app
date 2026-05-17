@@ -4,6 +4,7 @@ import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// 统计页（V3.0：6栏位 + 柱状图修复 + Pro提示 + SVG标题 + 序号圆圈）
 class StatsPage extends StatelessWidget {
@@ -87,7 +88,11 @@ class StatsPage extends StatelessWidget {
                 ],
 
                 // === 3. 最爱书籍 Top3 ===
-                _SectionTitle(icon: '📖', text: '最爱书籍'),
+                Row(children: [
+                  SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 14, height: 14),
+                  const SizedBox(width: 6),
+                  const Text('最爱书籍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xCC212529))),
+                ]),
                 const SizedBox(height: 8),
                 _FavoriteBooksSection(data: favoriteBooks),
                 const SizedBox(height: 20),
@@ -542,12 +547,47 @@ class _FavoriteBooksSection extends StatelessWidget {
     if (data.isEmpty) {
       return _EmptyCard(text: '暂无最爱书籍数据');
     }
-    final items = data.map((d) => _RankItemData(
-      rank: data.indexOf(d) + 1,
-      title: d['title'] as String,
-      subtitle: '${d['author']} · 读了${d['count']}次',
-    )).toList();
-    return _RankList(items: items);
+    return Column(
+      children: data.map((d) {
+        final index = data.indexOf(d);
+        final rank = index + 1;
+        final isLast = rank >= data.length;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            border: !isLast ? const Border(bottom: BorderSide(color: Color(0xFFF1F3F5))) : null,
+          ),
+          child: Row(
+            children: [
+              // 序号圆圈
+              Container(
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: rank == 1 ? const Color(0xFFFF6B6B) : (rank == 2 ? const Color(0xFF51CF66) : const Color(0xFF339AF0)),
+                ),
+                child: Center(child: Text('$rank', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white))),
+              ),
+              const SizedBox(width: 10),
+              // 书名 + 作者
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text('《${d['title']}》', style: const TextStyle(fontSize: 14, color: Color(0xFF212529)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('${d['author']}', style: const TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+                  ],
+                ),
+              ),
+              // 读了n次
+              Text('读了 ${d['count']} 次', style: const TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -790,6 +830,57 @@ class _CareerButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 统计页专用SVG图标16px
+class _StatSvgIcon16 extends StatelessWidget {
+  final String svg;
+  const _StatSvgIcon16({required this.svg});
+
+  static const _favBooks = ['M12 2L2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'];
+
+  @override
+  Widget build(BuildContext context) {
+    final paths = _favBooks;
+    return SizedBox(width: 16, height: 16, child: CustomPaint(painter: _SvgStrokePainter(paths: paths)));
+  }
+}
+
+class _SvgStrokePainter extends CustomPainter {
+  final List<String> paths;
+  _SvgStrokePainter({required this.paths});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFFF6B6B)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.save();
+    canvas.scale(size.width / 24, size.height / 24);
+    for (final d in paths) {
+      final p = Path();
+      final segs = d.split(RegExp(r'(?=[MLCZmlcz])'));
+      for (final seg in segs) {
+        if (seg.isEmpty) continue;
+        final cmd = seg[0];
+        final nums = seg.substring(1).trim().split(RegExp(r'[\s,]+')).where((s) => s.isNotEmpty).map(double.parse).toList();
+        switch (cmd) {
+          case 'M': p.moveTo(nums[0], nums[1]); break;
+          case 'L': p.lineTo(nums[0], nums[1]); break;
+          case 'C': p.cubicTo(nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]); break;
+          case 'Z': case 'z': p.close(); break;
+        }
+      }
+      canvas.drawPath(p, paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ============ 空状态 ============
