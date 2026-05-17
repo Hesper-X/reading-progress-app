@@ -450,61 +450,55 @@ class _ChartSection extends StatelessWidget {
     final chartMaxY = maxVal > 0 ? maxVal + 2.0 : 10.0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDEE2E6)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)],
       ),
-      child: SizedBox(
-        height: 160,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(12, (i) {
-            final month = i + 1;
-            final count = data[month] ?? 0;
-            final isPastOrCurrent = month <= currentMonth;
-            // 高度：5本=140px，每本28px
-            final barHeight = (count / chartMaxY * 140.0);
-
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // 数字
-                  if (count > 0)
-                    Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                  const SizedBox(height: 2),
-                  // 柱子（宽度44px）
-                  Container(
-                    width: 44,
-                    height: barHeight.clamp(4.0, 140.0),
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        topRight: Radius.circular(4),
+      child: Column(
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('$year 年读书数量（月份）', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+            Row(children: [
+              Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFF6B6B))),
+              const SizedBox(width: 4),
+              const Text('已读', style: TextStyle(fontSize: 11, color: Color(0xFF868E96))),
+            ]),
+          ]),
+          const SizedBox(height: 12),
+          SizedBox(height: 150, child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(12, (i) {
+              final month = i + 1;
+              final count = data[month] ?? 0;
+              final isPastOrCurrent = month <= currentMonth;
+              final barHeight = (count / chartMaxY * 140.0);
+              return Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (count > 0)
+                      Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: 44, height: barHeight.clamp(4.0, 140.0),
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                        gradient: isPastOrCurrent && count > 0
+                            ? const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)])
+                            : null,
+                        color: count > 0 && !isPastOrCurrent ? const Color(0xFFE9ECEF) : (count == 0 ? const Color(0xFFE9ECEF) : null),
                       ),
-                      gradient: isPastOrCurrent && count > 0
-                          ? const LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
-                            )
-                          : null,
-                      color: count > 0 && !isPastOrCurrent
-                          ? const Color(0xFFE9ECEF)
-                          : (count == 0 ? const Color(0xFFE9ECEF) : null),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  // 月份纯数字标签
-                  Text('$month', style: TextStyle(fontSize: 10, color: isPastOrCurrent ? AppColors.textSecondary : AppColors.textMuted)),
-                ],
-              ),
-            );
-          }),
-        ),
+                    const SizedBox(height: 8),
+                    Text('$month', style: TextStyle(fontSize: 10, color: isPastOrCurrent ? AppColors.textSecondary : AppColors.textMuted)),
+                  ],
+                ),
+              );
+            }),
+          )),
+        ],
       ),
     );
   }
