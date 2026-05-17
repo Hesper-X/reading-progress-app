@@ -475,25 +475,29 @@ class _ChartSection extends StatelessWidget {
               final isPastOrCurrent = month <= currentMonth;
               final barHeight = (count / chartMaxY * 140.0);
               return Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (count > 0)
-                      Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                    const SizedBox(height: 2),
-                    Container(
-                      width: 44, height: barHeight.clamp(4.0, 140.0),
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
-                        gradient: isPastOrCurrent && count > 0
-                            ? const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)])
-                            : null,
-                        color: count > 0 && !isPastOrCurrent ? const Color(0xFFE9ECEF) : (count == 0 ? const Color(0xFFE9ECEF) : null),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: (i == 0 || i == 11) ? 2.0 : 3.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (count > 0)
+                        Text('$count', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                      const SizedBox(height: 2),
+                      Container(
+                        width: double.infinity,
+                        height: barHeight.clamp(4.0, 140.0),
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                          gradient: isPastOrCurrent && count > 0
+                              ? const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)])
+                              : null,
+                          color: count > 0 && !isPastOrCurrent ? const Color(0xFFE9ECEF) : (count == 0 ? const Color(0xFFE9ECEF) : null),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('$month', style: TextStyle(fontSize: 10, color: isPastOrCurrent ? AppColors.textSecondary : AppColors.textMuted)),
-                  ],
+                      const SizedBox(height: 8),
+                      Text('$month', style: TextStyle(fontSize: 10, color: isPastOrCurrent ? AppColors.textSecondary : AppColors.textMuted)),
+                    ],
+                  ),
                 ),
               );
             }),
