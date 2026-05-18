@@ -364,24 +364,33 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                 // 内容
                 Column(
                   children: [
-                    // === 标题行：🎉🎊 + 2026 读书进度条 + ⭐⭐⭐⭐⭐（isCelebration时对称装饰）===
+                    // === 标题行：庆祝模式时装饰绝对定位，标题正常流 ===
                     Stack(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (isCelebration) ...[const Text('🎉', style: TextStyle(fontSize: 18)), const SizedBox(width: 4), const Text('🎊', style: TextStyle(fontSize: 18)), const SizedBox(width: 8)],
-                        Icon(Icons.menu_book, size: 18, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        // 标题正常流
+                        Padding(
+                          padding: EdgeInsets.only(top: isCelebration ? 36 : 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.menu_book, size: 18, color: Colors.white),
+                              const SizedBox(width: 6),
+                              Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                              ),
+                            ],
+                          ),
                         ),
-                        // 右上⭐ x5 对称装饰（V3.1庆祝模式）
-                        if (isCelebration) ...[const SizedBox(width: 8), const Text('⭐⭐⭐⭐⭐', style: TextStyle(fontSize: 14, letterSpacing: 2))],
+                        // 庆祝装饰：绝对定位，不占流（与设计稿一致）
+                        if (isCelebration) ...[Positioned(
+                          top: 2, left: 2,
+                          child: const Text('🎉🎊', style: TextStyle(fontSize: 16, letterSpacing: 1)),
+                        ), Positioned(
+                          top: 2, right: 2,
+                          child: const Text('⭐⭐⭐⭐⭐', style: TextStyle(fontSize: 14, letterSpacing: 2)),
+                        )],
                       ],
                     ),
-                  ],
-                ),
                 const SizedBox(height: 20),
                 // === 进度环 或 精简模式 ===
                 if (_showRing) ...[
