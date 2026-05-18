@@ -901,18 +901,20 @@ class _CareerButton extends StatelessWidget {
       return GestureDetector(onTap: onTap, child: buttonWidget);
     }
 
-    // 基础版：设计稿磨砂遮罩 — rgba(255,255,255,0.75) + backdrop-filter blur(2px)
-    return Stack(
-      children: [
-        buttonWidget,
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              color: Colors.white.withValues(alpha: 0.75),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                child: Center(
+    // 基础版：设计稿磨砂遮罩 — rgba(255,255,255,0.75) + backdrop-filter blur(2px)，点击跳转Pro升级页
+    return GestureDetector(
+      onTap: onUpgradeTap,
+      child: Stack(
+        children: [
+          buttonWidget,
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.75),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                  child: Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -932,6 +934,7 @@ class _CareerButton extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }
