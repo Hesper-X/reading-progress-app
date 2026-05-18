@@ -81,9 +81,15 @@ class StatsPage extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
 
-                // V3.1 已移除：旧的 _YearlyChart 由下方新增的 _YearlyTrendSection 替代
+                // === 3. 阅读生涯·年度趋势（V3.1 蓝色系柱状图，放月度趋势下方） ===
+                _YearlyTrendSection(
+                  yearlyTrend: booksProvider.getYearlyTrend(),
+                  isPro: filter.isPro,
+                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                ),
+                const SizedBox(height: 20),
 
-                // === 3. 最爱书籍 Top3 ===
+                // === 4. 最爱书籍 Top3 ===
                 Row(children: [
                   SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 14, height: 14),
                   const SizedBox(width: 6),
@@ -93,29 +99,23 @@ class StatsPage extends StatelessWidget {
                 _FavoriteBooksSection(data: favoriteBooks),
                 const SizedBox(height: 20),
 
-                // === 4. 最长与最短 ===
+                // === 5. 最长与最短 ===
                 _SectionTitle(icon: '⏱', text: '读书时间·最长与最短'),
                 const SizedBox(height: 8),
                 _LongestShortestSection(longest: longest, shortest: shortest),
                 const SizedBox(height: 20),
 
-                // === 5. 已读书单 ===
+                // === 6. 已读书单 ===
                 // 标题由 _ReadListSection 内部渲染
                 _ReadListSection(books: readList),
                 const SizedBox(height: 20),
 
-                // === 6. 最爱作者 Top3 ===
+                // === 7. 最爱作者 Top3 ===
                 // 标题由 _FavoriteAuthorsSection 内部渲染
                 _FavoriteAuthorsSection(data: favoriteAuthors),
                 const SizedBox(height: 20),
 
-                // === 7. 阅读生涯·年度趋势（V3.1 新增 — 蓝色系柱状图） ===
-                _YearlyTrendSection(
-                  yearlyTrend: booksProvider.getYearlyTrend(),
-                  isPro: filter.isPro,
-                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
-                ),
-                const SizedBox(height: 20),
+                // V3.1: 年度趋势已移至月度趋势下方（#3）
 
                 // === 底部按钮「我的阅读生涯」（V3.1: 基础版遮罩锁定/Pro版可用） ===
                 _CareerButton(
