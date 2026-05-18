@@ -880,7 +880,8 @@ class _CareerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = Container(
+    // 按钮本体
+    final buttonWidget = Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -897,57 +898,55 @@ class _CareerButton extends StatelessWidget {
     );
 
     if (isPro) {
-      return GestureDetector(onTap: onTap, child: button);
+      return GestureDetector(onTap: onTap, child: buttonWidget);
     }
 
-    // 基础版：遮罩锁定
-    return Stack(
-      children: [
-        button,
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              color: Colors.white.withValues(alpha: 0.75),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                child: Container(),
-              ),
-            ),
+    // 基础版：磨砂遮罩 + 🔒图标 + 「升级 Pro 查看阅读生涯」同一行（简洁版）
+    return GestureDetector(
+      onTap: onUpgradeTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF6B6B),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFFFF6B6B).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('🔒', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              const Text('升级 Pro 查看阅读生涯',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70)),
+            ],
           ),
         ),
-        // 遮罩内容
-        Positioned.fill(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 48, height: 48,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE9ECEF)),
-                  child: const Center(child: Text('🔒', style: TextStyle(fontSize: 20))),
-                ),
-                const SizedBox(height: 8),
-                const Text('升级 Pro 查看阅读生涯', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
-                const SizedBox(height: 4),
-                const Text('解锁全部年份阅读生涯数据', style: TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: onUpgradeTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B6B),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text('了解 Pro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ),
+      ),
+    );
+  }
+}
+
+/// 了解 Pro 按钮（可复用，设计稿圆角16px规格）
+class _UpgradeProBtn extends StatelessWidget {
+  final VoidCallback onTap;
+  const _UpgradeProBtn({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF6B6B),
+          borderRadius: BorderRadius.circular(16),
         ),
-      ],
+        child: const Text('了解 Pro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+      ),
     );
   }
 }
@@ -1083,42 +1082,39 @@ class _YearlyTrendSection extends StatelessWidget {
                   ),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      height: 150,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: years.map((year) {
-                          final count = yearlyTrend[year] ?? 0;
-                          final barHeight = maxCount > 0 ? (count / maxCount) * 140.0 : 0.0;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: SizedBox(
-                              width: 44,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Text('$count', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF339AF0))),
-                                  const SizedBox(height: 2),
-                                  Container(
-                                    width: 36,
-                                    height: barHeight.clamp(4.0, 140.0),
-                                    decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                        colors: [Color(0xFF74C0FC), Color(0xFF339AF0)],
-                                      ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: years.map((year) {
+                        final count = yearlyTrend[year] ?? 0;
+                        final barHeight = maxCount > 0 ? (count / maxCount) * 140.0 : 0.0;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: SizedBox(
+                            width: 44,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text('$count', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF339AF0))),
+                                const SizedBox(height: 2),
+                                Container(
+                                  width: 36,
+                                  height: barHeight.clamp(4.0, 140.0),
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [Color(0xFF74C0FC), Color(0xFF339AF0)],
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text('$year', style: const TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text('$year', style: const TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+                              ],
                             ),
-                          );
-                        }).toList(),
-                      ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
