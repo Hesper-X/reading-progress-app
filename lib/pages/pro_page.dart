@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/purchase_provider.dart';
-import '../theme/colors.dart';
 
-/// Pro 升级页 — 按设计稿 08Pro 升级页.html 实现
+/// Pro 升级页 — 按设计稿 08Pro 升级页.html 1:1 实现
 class ProPage extends StatefulWidget {
   const ProPage({super.key});
 
@@ -131,15 +130,27 @@ class _ProPageState extends State<ProPage> {
                   child: Column(
                     children: [
                       // === Header ===
-                      const Column(
+                      Column(
                         children: [
-                          Text(
-                            '✨ PRO',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 2,
+                          // 金色渐变徽章（设计稿1:1）
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFFFD700), Color(0xFFFFC700)],
+                              ),
+                            ),
+                            child: const Text(
+                              '✨ PRO',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 2,
+                              ),
                             ),
                           ),
                           SizedBox(height: 12),
@@ -217,7 +228,7 @@ class _ProPageState extends State<ProPage> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: Color(0xFF212529),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -229,8 +240,8 @@ class _ProPageState extends State<ProPage> {
                             const SizedBox(height: 16),
                             _ProFeatureItem(
                               icon: '📊',
-                              title: '年度总结报告',
-                              desc: '生成精美的年度读书报告，分享朋友圈',
+                              title: '阅读生涯统计',
+                              desc: '全部年份数据+年度对比趋势',
                             ),
                             const SizedBox(height: 16),
                             _ProFeatureItem(
@@ -240,15 +251,15 @@ class _ProPageState extends State<ProPage> {
                             ),
                             const SizedBox(height: 16),
                             _ProFeatureItem(
-                              icon: '🔔',
-                              title: '阅读提醒',
-                              desc: '自定义提醒时间，养成阅读习惯',
+                              icon: '🎨',
+                              title: '多主题/颜色切换',
+                              desc: '多种配色方案，个性定制',
                             ),
                             const SizedBox(height: 16),
                             _ProFeatureItem(
-                              icon: '🎨',
-                              title: '主题皮肤',
-                              desc: '多种配色方案，个性定制',
+                              icon: '🎉',
+                              title: '自定义分享文案',
+                              desc: '自由编辑分享文案，彰显个性',
                             ),
                           ],
                         ),
@@ -358,7 +369,7 @@ class _ProPageState extends State<ProPage> {
   }
 }
 
-/// Pro 功能项
+/// Pro 功能项 — 设计稿: 左侧绿色勾圆圈 + 右侧emoji+标题 同排 + 描述
 class _ProFeatureItem extends StatelessWidget {
   final String icon;
   final String title;
@@ -375,18 +386,19 @@ class _ProFeatureItem extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 绿色勾圆圈（设计稿1:1）
         Container(
           width: 28,
           height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.success.withValues(alpha: 0.1),
+            color: const Color(0xFF51CF66).withValues(alpha: 0.1),
           ),
           child: Center(
             child: Icon(
               Icons.check,
               size: 16,
-              color: AppColors.success,
+              color: const Color(0xFF51CF66),
             ),
           ),
         ),
@@ -395,16 +407,20 @@ class _ProFeatureItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // emoji + 标题 同排
               Row(
                 children: [
                   Text(icon, style: const TextStyle(fontSize: 15)),
                   const SizedBox(width: 4),
-                  const Text(
-                    '无限添加书籍',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF212529),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -414,7 +430,7 @@ class _ProFeatureItem extends StatelessWidget {
                 desc,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: Color(0xFF868E96),
                 ),
               ),
             ],
