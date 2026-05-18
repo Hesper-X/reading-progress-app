@@ -251,12 +251,6 @@ class _ProPageState extends State<ProPage> {
                             ),
                             const SizedBox(height: 16),
                             _ProFeatureItem(
-                              icon: '🎨',
-                              title: '多主题/颜色切换',
-                              desc: '多种配色方案，个性定制',
-                            ),
-                            const SizedBox(height: 16),
-                            _ProFeatureItem(
                               icon: '🎉',
                               title: '自定义分享文案',
                               desc: '自由编辑分享文案，彰显个性',
