@@ -408,23 +408,33 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                     style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text('已读完 $readCount / $totalCount本',
                           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
-                      if (isCelebration) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF51CF66),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text('目标达成！',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                      if (isCelebration) const SizedBox(height: 6),
+                      if (isCelebration)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF51CF66),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('🏆 ', style: TextStyle(fontSize: 11)),
+                                  Text('目标达成！',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
                     ],
                   ),
                 ] else ...[
