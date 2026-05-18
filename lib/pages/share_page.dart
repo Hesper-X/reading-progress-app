@@ -343,10 +343,11 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
             ),
             child: Column(
               children: [
-                // === 标题行：2026 读书进度条 ===
+                // === 标题行：🎉🎊 + 2026 读书进度条（isCelebration时左上角装饰）===
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    if (isCelebration) ...[const Text('🎉', style: TextStyle(fontSize: 18)), const SizedBox(width: 4), const Text('🎊', style: TextStyle(fontSize: 18)), const SizedBox(width: 8)],
                     Icon(Icons.menu_book, size: 18, color: Colors.white),
                     const SizedBox(width: 6),
                     Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
