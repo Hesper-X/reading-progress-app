@@ -234,4 +234,16 @@ class BooksProvider with ChangeNotifier {
   Future<int> getReadingBookCount() async {
     return (await _repository.getReadingBooks()).length;
   }
+
+  /// V3.1 新增：年度趋势柱状图数据 — 按年份聚合已读完书籍
+  /// 返回 Map<年份, 本数>，不限当年
+  Map<int, int> getYearlyTrend() {
+    final Map<int, int> trend = {};
+    for (final book in _doneBooks) {
+      if (book.readDate == null) continue;
+      final year = book.readDate!.year;
+      trend[year] = (trend[year] ?? 0) + 1;
+    }
+    return trend;
+  }
 }

@@ -83,6 +83,22 @@ class FilterProvider with ChangeNotifier {
     }
   }
 
+  /// V3.1 新增：设置 fromReadingLife 状态（统计页跳转分享页时使用）
+  void setFromReadingLife(bool value) {
+    _state.fromReadingLife = value;
+    notifyListeners();
+  }
+
+  /// V3.1 新增：切换全部年份 + 标记来自阅读生涯
+  void switchToAllYearsFromLife() {
+    if (_state.isPro) {
+      _state.selectedYear = null;
+      _state.selectedMonth = null;
+      _state.fromReadingLife = true;
+      notifyListeners();
+    }
+  }
+
   /// 更新 Pro 状态
   void updateProStatus(bool isPro) {
     _state.isPro = isPro;

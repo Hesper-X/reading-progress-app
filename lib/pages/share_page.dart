@@ -149,6 +149,10 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
             padding: const EdgeInsets.all(20),
             child: Column(
                 children: [
+                  // === V3.1 数据范围提示横幅（仅「我的阅读生涯」路径显示） ===
+                  if (filterState.fromReadingLife)
+                    _DataScopeBanner(booksProvider: booksProvider),
+                  const SizedBox(height: 16),
                   // === 预览卡片（粉色框外可见，仅红色渐变图内部可截图） ===
                   _SharePreviewCard(
                     previewKey: _previewKey,
@@ -183,7 +187,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '选择预览模块（数据同统计页当前筛选状态）',
+                      '分享页展示控制',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                   ),
@@ -341,17 +345,40 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                 colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
               ),
             ),
-            child: Column(
+            child: Stack(
               children: [
-                // === 标题行：🎉🎊 + 2026 读书进度条（isCelebration时左上角装饰）===
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // 金色微光背景（V3.1庆祝模式 — 极淡渐变）
+                if (isCelebration)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x0FFFD700), Color(0x00000000)],
+                        ),
+                      ),
+                    ),
+                  ),
+                // 内容
+                Column(
                   children: [
-                    if (isCelebration) ...[const Text('🎉', style: TextStyle(fontSize: 18)), const SizedBox(width: 4), const Text('🎊', style: TextStyle(fontSize: 18)), const SizedBox(width: 8)],
-                    Icon(Icons.menu_book, size: 18, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                    // === 标题行：🎉🎊 + 2026 读书进度条 + ⭐⭐⭐⭐⭐（isCelebration时对称装饰）===
+                    Stack(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isCelebration) ...[const Text('🎉', style: TextStyle(fontSize: 18)), const SizedBox(width: 4), const Text('🎊', style: TextStyle(fontSize: 18)), const SizedBox(width: 8)],
+                        Icon(Icons.menu_book, size: 18, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        ),
+                        // 右上⭐ x5 对称装饰（V3.1庆祝模式）
+                        if (isCelebration) ...[const SizedBox(width: 8), const Text('⭐⭐⭐⭐⭐', style: TextStyle(fontSize: 14, letterSpacing: 2))],
+                      ],
                     ),
                   ],
                 ),
@@ -444,8 +471,10 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                 ),
               ],
             ),
-          ),
+          ],
         ),
+      ),
+    ),
         ],
       ),
     );
@@ -532,7 +561,7 @@ class _ProgressRingRuleTip extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '进度环仅在当年+无月份筛选时显示。选择往年、月度或全部生涯时，进度环自动隐藏。',
+              '进度环仅在当年且月份筛选为「全部」时显示。选择往年、其他月度或全部生涯时，进度环自动隐藏。',
               style: const TextStyle(fontSize: 11, color: Color(0xFFE67700), height: 1.5),
             ),
           ),
@@ -1042,6 +1071,65 @@ class _ShareFavAuthors extends StatelessWidget {
           );
         }),
       ]),
+    );
+  }
+}
+
+// ============ V3.1 数据范围提示横幅 ============
+
+class _DataScopeBanner extends StatelessWidget {
+  final BooksProvider booksProvider;
+
+  const _DataScopeBanner({required this.booksProvider});
+
+  @override
+  Widget build(BuildContext context) {
+    final doneBooks = booksProvider.doneBooks;
+    final total = doneBooks.length;
+    final years = doneBooks
+        .where((b) => b.readDate != null)
+        .map((b) => b.readDate!.year)
+        .toSet()
+        .toList()
+      ..sort();
+
+    final minYear = years.isNotEmpty ? years.first : DateTime.now().year;
+    final maxYear = years.isNotEmpty ? years.last : DateTime.now().year;
+    final yearText = minYear == maxYear ? '覆盖 $minYear 年' : '覆盖 ${minYear}~${maxYear} 年';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9DB),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFE8A0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('📣', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text('当前展示全部年份汇总',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE67700))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '共完成 $total 本书 · $yearText',
+            style: const TextStyle(fontSize: 12, color: Color(0xFFE67700)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '可在下方「分享页展示控制」选择是否显示相应信息',
+            style: TextStyle(fontSize: 11, color: Color(0xFFE67700)),
+          ),
+        ],
+      ),
     );
   }
 }

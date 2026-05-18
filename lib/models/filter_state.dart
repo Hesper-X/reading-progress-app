@@ -3,19 +3,23 @@ class FilterState {
   /// null = 全部年份（Pro版专属）
   int? selectedYear;
 
-  /// null = 无月份筛选（1-12 有值）
+  /// null = 全部月份（月份下拉选中「全部」时触发）
   int? selectedMonth;
 
   /// 全局 feature flag
   bool isPro;
 
+  /// V3.1 新增：是否从统计页「我的阅读生涯」跳转到分享页
+  bool fromReadingLife;
+
   FilterState({
     this.selectedYear,
     this.selectedMonth,
     this.isPro = false,
+    this.fromReadingLife = false,
   });
 
-  /// 当前是否显示进度环（仅当年+无月份时显示）
+  /// 当前是否显示进度环（仅当年+月份「全部」时显示）
   bool get showProgressRing =>
       selectedYear == DateTime.now().year && selectedMonth == null;
 
@@ -42,11 +46,13 @@ class FilterState {
     int? Function()? selectedYear,
     int? Function()? selectedMonth,
     bool? isPro,
+    bool? fromReadingLife,
   }) {
     return FilterState(
       selectedYear: selectedYear != null ? selectedYear() : this.selectedYear,
       selectedMonth: selectedMonth != null ? selectedMonth() : this.selectedMonth,
       isPro: isPro ?? this.isPro,
+      fromReadingLife: fromReadingLife ?? this.fromReadingLife,
     );
   }
 }

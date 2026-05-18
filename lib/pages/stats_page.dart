@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
@@ -6,7 +7,7 @@ import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// 统计页（V3.0：6栏位 + 柱状图修复 + Pro提示 + SVG标题 + 序号圆圈）
+/// 统计页（V3.1：7栏位 + 年度趋势柱状图 + 底部按钮遮罩）
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
 
@@ -80,12 +81,7 @@ class StatsPage extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
 
-                if (filter.selectedYear == null && filter.isPro) ...[
-                  _SectionTitle(icon: '📊', text: '全部·各年对比'),
-                  const SizedBox(height: 8),
-                  _YearlyChart(data: monthlyTrend),
-                  const SizedBox(height: 20),
-                ],
+                // V3.1 已移除：旧的 _YearlyChart 由下方新增的 _YearlyTrendSection 替代
 
                 // === 3. 最爱书籍 Top3 ===
                 Row(children: [
@@ -113,14 +109,23 @@ class StatsPage extends StatelessWidget {
                 _FavoriteAuthorsSection(data: favoriteAuthors),
                 const SizedBox(height: 20),
 
-                // === 底部按钮「我的阅读生涯」 ===
+                // === 7. 阅读生涯·年度趋势（V3.1 新增 — 蓝色系柱状图） ===
+                _YearlyTrendSection(
+                  yearlyTrend: booksProvider.getYearlyTrend(),
+                  isPro: filter.isPro,
+                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                ),
+                const SizedBox(height: 20),
+
+                // === 底部按钮「我的阅读生涯」（V3.1: 基础版遮罩锁定/Pro版可用） ===
                 _CareerButton(
-                    onTap: () {
-                      // 跳转分享Tab，切到全部年份
-                      filterProvider.switchToAllYears();
-                      Navigator.pushNamed(context, '/share');
-                    },
-                  ),
+                  isPro: filter.isPro,
+                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                  onTap: () {
+                    filterProvider.switchToAllYearsFromLife();
+                    Navigator.pushNamed(context, '/share');
+                  },
+                ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -861,30 +866,88 @@ class _RankCard extends StatelessWidget {
 
 // ============ 底部按钮 ============
 
+/// 底部「我的阅读生涯」按钮（V3.1: 基础版遮罩锁定/Pro版可用）
 class _CareerButton extends StatelessWidget {
   final VoidCallback onTap;
+  final bool isPro;
+  final VoidCallback onUpgradeTap;
 
-  const _CareerButton({required this.onTap});
+  const _CareerButton({
+    required this.onTap,
+    this.isPro = false,
+    required this.onUpgradeTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          color: const Color(0xFFFF6B6B),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFFFF6B6B).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
-          ],
-        ),
-        child: const Center(
-          child: Text('我的阅读生涯',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-        ),
+    final button = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFFFF6B6B),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFFFF6B6B).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
+        ],
       ),
+      child: const Center(
+        child: Text('我的阅读生涯',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+      ),
+    );
+
+    if (isPro) {
+      return GestureDetector(onTap: onTap, child: button);
+    }
+
+    // 基础版：遮罩锁定
+    return Stack(
+      children: [
+        button,
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              color: Colors.white.withValues(alpha: 0.75),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Container(),
+              ),
+            ),
+          ),
+        ),
+        // 遮罩内容
+        Positioned.fill(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48, height: 48,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE9ECEF)),
+                  child: const Center(child: Text('🔒', style: TextStyle(fontSize: 20))),
+                ),
+                const SizedBox(height: 8),
+                const Text('升级 Pro 查看阅读生涯', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
+                const SizedBox(height: 4),
+                const Text('解锁全部年份阅读生涯数据', style: TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: onUpgradeTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6B6B),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text('了解 Pro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -959,6 +1022,148 @@ class _EmptyCard extends StatelessWidget {
       child: Center(
         child: Text(text, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
       ),
+    );
+  }
+}
+
+// ============ 年度趋势柱状图（V3.1 新增） ============
+
+class _YearlyTrendSection extends StatelessWidget {
+  final Map<int, int> yearlyTrend;
+  final bool isPro;
+  final VoidCallback onUpgradeTap;
+
+  const _YearlyTrendSection({
+    required this.yearlyTrend,
+    required this.isPro,
+    required this.onUpgradeTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final maxYear = yearlyTrend.keys.isEmpty ? now.year : yearlyTrend.keys.reduce((a, b) => a > b ? a : b);
+    final minDataYear = yearlyTrend.keys.isEmpty ? now.year : yearlyTrend.keys.reduce((a, b) => a < b ? a : b);
+    final startYear = [minDataYear, maxYear - 7].reduce((a, b) => a < b ? a : b);
+
+    final years = <int>[];
+    for (int y = startYear; y <= maxYear; y++) {
+      years.add(y);
+    }
+
+    final maxCount = yearlyTrend.values.isEmpty ? 1 : yearlyTrend.values.reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('阅读生涯·年度趋势', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(color: const Color(0xFFFF6B6B), borderRadius: BorderRadius.circular(8)),
+              child: const Text('Pro', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFDEE2E6)),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      height: 150,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: years.map((year) {
+                          final count = yearlyTrend[year] ?? 0;
+                          final barHeight = maxCount > 0 ? (count / maxCount) * 140.0 : 0.0;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: SizedBox(
+                              width: 44,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text('$count', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF339AF0))),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    width: 36,
+                                    height: barHeight.clamp(4.0, 140.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [Color(0xFF74C0FC), Color(0xFF339AF0)],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text('$year', style: const TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+                if (!isPro)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 48, height: 48,
+                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE9ECEF)),
+                                  child: const Center(child: Text('🔒', style: TextStyle(fontSize: 20))),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text('升级 Pro 查看历年趋势', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
+                                const SizedBox(height: 4),
+                                const Text('解锁全部年份阅读生涯数据', style: TextStyle(fontSize: 11, color: Color(0xFFADB5BD))),
+                                const SizedBox(height: 12),
+                                GestureDetector(
+                                  onTap: onUpgradeTap,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                                    decoration: BoxDecoration(color: const Color(0xFFFF6B6B), borderRadius: BorderRadius.circular(16)),
+                                    child: const Text('了解 Pro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
