@@ -901,31 +901,37 @@ class _CareerButton extends StatelessWidget {
       return GestureDetector(onTap: onTap, child: buttonWidget);
     }
 
-    // 基础版：磨砂遮罩 + 🔒图标 + 「升级 Pro 查看阅读生涯」同一行（简洁版）
-    return GestureDetector(
-      onTap: onUpgradeTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF6B6B),
-            boxShadow: [
-              BoxShadow(color: const Color(0xFFFF6B6B).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('🔒', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
-              const Text('升级 Pro 查看阅读生涯',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70)),
-            ],
+    // 基础版：设计稿磨砂遮罩 — rgba(255,255,255,0.75) + backdrop-filter blur(2px)
+    return Stack(
+      children: [
+        buttonWidget,
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              color: Colors.white.withValues(alpha: 0.75),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 24, height: 24,
+                        decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFDEE2E6)),
+                        child: const Center(child: Text('🔒', style: TextStyle(fontSize: 14))),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('升级 Pro 查看阅读生涯',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
