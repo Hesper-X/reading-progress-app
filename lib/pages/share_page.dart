@@ -336,7 +336,8 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
             key: widget.previewKey,
             child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            // 庆祝模式时顶部内边距缩小，让装饰更贴近上边界
+            padding: EdgeInsets.fromLTRB(24, isCelebration ? 12 : 24, 24, 24),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: const LinearGradient(
