@@ -10,6 +10,10 @@ class NotificationService {
   NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+
+  /// 暴露给 ReminderScheduler 使用的 plugin 引用（用于 zonedSchedule）
+  FlutterLocalNotificationsPlugin get platform => _plugin;
+
   bool _initialized = false;
 
   /// 通知渠道配置常量
