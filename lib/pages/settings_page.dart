@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/settings_provider.dart';
+import '../providers/books_provider.dart';
+import '../services/reminder_scheduler.dart';
 import '../providers/purchase_provider.dart';
 import '../providers/books_provider.dart';
 import '../repositories/book_repository.dart';
@@ -293,6 +295,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (result != null && mounted) {
       await context.read<SettingsProvider>().setReminderTime(result);
       setState(() => _reminderTime = result);
+      // 提醒时间变动后重新调度
+      await ReminderScheduler().updateSchedule(
+        booksProvider: context.read<BooksProvider>(),
+        settingsProvider: context.read<SettingsProvider>(),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('提醒已设置')),
@@ -398,6 +405,11 @@ class _SettingsPageState extends State<SettingsPage> {
               onSwitchChanged: (v) async {
                 await context.read<SettingsProvider>().setDailyReminder(v);
                 setState(() => _reminderEnabled = v);
+                // 同步调度/取消每日提醒
+                await ReminderScheduler().updateSchedule(
+                  booksProvider: context.read<BooksProvider>(),
+                  settingsProvider: context.read<SettingsProvider>(),
+                );
               },
             ),
             _SettingCardData(

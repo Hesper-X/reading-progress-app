@@ -1,77 +1,121 @@
-﻿import '../repositories/book_repository.dart';
-import '../databases/database_helper.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// 鏈湴閫氱煡鏈嶅姟锛堥槄璇绘彁閱掞級
+/// 每日阅读提醒通知服务
+///
+/// 基于在读书籍动态生成提醒文案，每日指定时间推送。
+/// 无在读书籍时不触发（由调用方控制）。
 class NotificationService {
-  static final NotificationService instance = NotificationService._init();
-  final         bool _initialized = false;
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
 
-  NotificationService._init();
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
 
-  /// 鍒濆鍖栭€氱煡娓犻亾
-  Future<void> initialize() async {
+  /// 通知渠道配置常量
+  static const String _channelId = 'daily_reading_reminder';
+  static const String _channelName = '每日阅读提醒';
+  static const String _channelDesc = '提醒你阅读在读书籍';
+
+  /// 通知 ID（固定 ID 实现每日覆盖）
+  static const int _notificationId = 1001;
+
+  /// 初始化通知插件
+  Future<void> init() async {
     if (_initialized) return;
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    final settings = InitializationSettings(
+    const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(initSettings);
     _initialized = true;
   }
 
-  /// 鍙戦€佹瘡鏃ラ槄璇绘彁閱?  Future<void> sendDailyReminder() async {
-    if (!_initialized) await initialize();
-
-    final repo = BookRepository(DatabaseHelper.instance);
-    final readingBooks = await repo.getReadingBooks();
-
-    if (readingBooks.isEmpty) return;
-
-    String message;
-    if (readingBooks.length == 1) {
-      message = "馃摉 浣犵殑銆?{readingBooks.first.title}銆嬩粖澶╁湪璇诲悧锛?;
-    } else {
-      message =
-          "馃摉 浣犳湁 ${readingBooks.length} 鏈功鍦ㄨ锛屼粖澶╃炕寮€鍝竴鏈紵";
-    }
-
-    final androidDetails = AndroidNotificationDetails(
-      'reading_reminder',
-      '闃呰鎻愰啋',
-      channelDescription: '鍩轰簬浣犵殑鍦ㄨ涔︾睄鐨勬瘡鏃ラ槄璇绘彁閱?,
+  /// 创建/更新通知渠道（Android 8.0+ 必需）
+  Future<void> _ensureChannel() async {
+    const androidChannel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: _channelDesc,
       importance: Importance.high,
-      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
     );
 
-    const iosDetails = DarwinNotificationDetails();
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(androidChannel);
+  }
 
-    final details = NotificationDetails(
+  /// 显示本地通知
+  ///
+  /// [title] 通知标题，如「阅读提醒」
+  /// [body] 通知正文，如「《三体》还在读吗？」
+  Future<void> showNotification({
+    required String title,
+    required String body,
+  }) async {
+    await _ensureChannel();
+
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      // Android 12+ 弹窗通知（需 POST_NOTIFICATIONS 权限）
+      fullScreenIntent: false,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
     await _plugin.show(
-      id: 0,
-      title: '璇讳功杩涘害鏉?,
-      body: message,
-      notificationDetails: details,
-      payload: 'open_reading_tab',
+      _notificationId,
+      title,
+      body,
+      details,
     );
   }
 
-  /// 鍙栨秷鎵€鏈夐€氱煡
+  /// 取消所有通知
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
   }
-}
 
+  /// 取消指定通知
+  Future<void> cancel(int id) async {
+    await _plugin.cancel(id);
+  }
+
+  /// 请求 Android 13+ 通知权限
+  Future<bool> requestPermissions() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return false;
+
+    final granted = await androidPlugin.requestNotificationsPermission();
+    return granted ?? false;
+  }
+}

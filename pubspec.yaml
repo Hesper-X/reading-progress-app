@@ -24,6 +24,7 @@ dependencies:
   uuid: ^4.2.2
   shared_preferences: ^2.2.0
   flutter_svg: ^2.0.9
+  flutter_local_notifications: ^17.2.3
 
 dev_dependencies:
   flutter_test:

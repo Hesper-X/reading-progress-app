@@ -10,6 +10,8 @@ import 'providers/filter_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/purchase_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/notification_service.dart';
+import 'services/reminder_scheduler.dart';
 import 'theme/app_theme.dart';
 import 'routes/route_generator.dart';
 import 'routes/app_routes.dart';
@@ -24,6 +26,9 @@ void main() async {
   final bookRepository = BookRepository(dbHelper);
   final settingsRepository = SettingsRepository(dbHelper);
   final goalRepository = GoalRepository(dbHelper);
+
+  // 初始化通知服务
+  await NotificationService().init();
 
   runApp(
     MultiProvider(
@@ -79,6 +84,16 @@ class _ReadingProgressAppState extends State<ReadingProgressApp> {
       context.read<SettingsProvider>().loadSettings();
       context.read<PurchaseProvider>().loadPurchaseStatus();
       context.read<ThemeProvider>().loadTheme();
+
+      // 恢复每日提醒调度
+      Future.microtask(() async {
+        final booksProvider = context.read<BooksProvider>();
+        final settingsProvider = context.read<SettingsProvider>();
+        await ReminderScheduler().restoreAfterStartup(
+          booksProvider: booksProvider,
+          settingsProvider: settingsProvider,
+        );
+      });
     });
   }
 
