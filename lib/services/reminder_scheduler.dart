@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../models/book.dart';
@@ -155,6 +156,7 @@ class ReminderScheduler {
   /// - 应用启动时
   ///
   /// 使用 Android AlarmManager 持久调度，App 被杀仍可触发。
+  /// 同时同步写入 SharedPreferences 供 Native BootReceiver 开机恢复使用。
   Future<void> updateSchedule({
     required BooksProvider booksProvider,
     required SettingsProvider settingsProvider,
@@ -162,16 +164,19 @@ class ReminderScheduler {
     _lastSettings = settingsProvider;
     _cachedReadingBooks = List.from(booksProvider.readingBooks);
 
-    // 1. 取消现有所有调度
+    // 1. 同步设置到 SharedPreferences（供 Native BootReceiver 读取）
+    await _syncToSharedPrefs(settingsProvider);
+
+    // 2. 取消现有所有调度
     await _notif.cancelAll();
 
-    // 2. 如果提醒关闭 → 不做任何调度
+    // 3. 如果提醒关闭 → 不做任何调度
     if (!settingsProvider.dailyReminder) {
       debugPrint('[Reminder] 提醒已关闭，取消所有调度');
       return;
     }
 
-    // 3. 生成提醒正文
+    // 4. 生成提醒正文
     final body = _buildBody(booksProvider.readingBooks);
     if (body == null) {
       // 无在读书籍 → 不打扰，但不清除调度开关状态
@@ -179,8 +184,23 @@ class ReminderScheduler {
       return;
     }
 
-    // 4. 通过 zonedSchedule 持久调度（AlarmManager 级别）
+    // 5. 通过 zonedSchedule 持久调度（AlarmManager 级别）
     await _zonedSchedule(body);
+  }
+
+  /// 将提醒设置同步写入 SharedPreferences
+  ///
+  /// Native 侧 BootReceiver 从 SharedPreferences 读取设置
+  /// 以在开机后恢复 AlarmManager 调度。
+  Future<void> _syncToSharedPrefs(SettingsProvider settingsProvider) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('flutter.daily_reminder', settingsProvider.dailyReminder);
+      await prefs.setString('flutter.reminder_time', settingsProvider.reminderTime);
+      debugPrint('[Reminder] 设置已同步到 SharedPreferences');
+    } catch (e) {
+      debugPrint('[Reminder] 同步到 SharedPreferences 失败: $e');
+    }
   }
 
   /// 取消所有提醒调度
