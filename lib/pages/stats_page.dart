@@ -671,9 +671,6 @@ class _ReadListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (books.isEmpty) {
-      return _EmptyCard(text: '还没有读完的书');
-    }
     String formatFullDate(DateTime d) => '${d.year}年${d.month}月${d.day}日';
 
     return Column(
@@ -692,8 +689,11 @@ class _ReadListSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        // 书籍列表
-        ...List.generate(books.length > 10 ? 10 : books.length, (i) {
+        // 书籍列表（无数据时显示空卡片）
+        if (books.isEmpty)
+          _EmptyCard(text: '还没有读完的书')
+        else
+          ...List.generate(books.length > 10 ? 10 : books.length, (i) {
           final book = books[i];
           final isLast = i >= (books.length > 10 ? 9 : books.length - 1);
           return Container(
@@ -738,9 +738,6 @@ class _FavoriteAuthorsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (data.isEmpty) {
-      return _EmptyCard(text: '暂无最爱作者数据');
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -750,7 +747,10 @@ class _FavoriteAuthorsSection extends StatelessWidget {
           const Text('最爱作者', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
         ]),
         const SizedBox(height: 10),
-        ...List.generate(data.length > 3 ? 3 : data.length, (i) {
+        if (data.isEmpty)
+          _EmptyCard(text: '暂无最爱作者数据')
+        else
+          ...List.generate(data.length > 3 ? 3 : data.length, (i) {
           final d = data[i];
           final isLast = i >= ((data.length > 3 ? 3 : data.length) - 1);
           final rankColors = [const Color(0xFFFF6B6B), const Color(0xFF51CF66), const Color(0xFF339AF0)];
