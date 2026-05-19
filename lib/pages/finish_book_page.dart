@@ -489,7 +489,7 @@ class _FinishBookPageState extends State<FinishBookPage> {
                     children: [
                       // 左侧：保存按钮（缩小）
                       Expanded(
-                        flex: 3,
+                        flex: 1,
                         child: GestureDetector(
                           onTap: (_isSaving || _isDeleting) ? null : _save,
                           child: Container(
@@ -535,7 +535,7 @@ class _FinishBookPageState extends State<FinishBookPage> {
                       const SizedBox(width: 10),
                       // 右侧：删除按钮
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: GestureDetector(
                           onTap: (_isSaving || _isDeleting) ? null : _deleteBook,
                           child: Container(

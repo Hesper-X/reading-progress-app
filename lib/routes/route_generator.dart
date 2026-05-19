@@ -58,6 +58,10 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ProPage());
 
       case AppRoutes.wish:
+        final wishArgs = settings.arguments;
+        if (wishArgs is Book) {
+          return MaterialPageRoute(builder: (_) => WishBookPage(editBook: wishArgs));
+        }
         return MaterialPageRoute(builder: (_) => const WishBookPage());
 
       case AppRoutes.settings:

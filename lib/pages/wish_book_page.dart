@@ -8,8 +8,11 @@ import '../routes/app_routes.dart';
 
 /// 加入想读页 — 按设计稿 07 添加书籍.html「+ 读书清单」模式实现
 /// 仅含书名+作者，无封面/日期字段
+/// V3.2：新增 editBook 参数支持编辑模式
 class WishBookPage extends StatefulWidget {
-  const WishBookPage({super.key});
+  final Book? editBook;
+
+  const WishBookPage({super.key, this.editBook});
 
   @override
   State<WishBookPage> createState() => _WishBookPageState();
@@ -17,11 +20,15 @@ class WishBookPage extends StatefulWidget {
 
 class _WishBookPageState extends State<WishBookPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _authorController = TextEditingController();
+  late final _titleController = TextEditingController(text: widget.editBook?.title);
+  late final _authorController = TextEditingController(text: widget.editBook?.author);
   final _titleFocusNode = FocusNode();
   final _authorFocusNode = FocusNode();
   bool _isSaving = false;
+  bool _isDeleting = false;
+
+  /// V3.2 编辑模式
+  bool get _isEditing => widget.editBook != null;
 
   @override
   void dispose() {
@@ -39,38 +46,101 @@ class _WishBookPageState extends State<WishBookPage> {
 
     final provider = context.read<BooksProvider>();
 
-    // 检查免费版限制
-    final canAdd = await provider.canAddBook();
-    if (!canAdd) {
+    if (_isEditing) {
+      // V3.2 编辑模式：调用 updateBook 保留 id
+      final success = await provider.updateBook(
+        bookId: widget.editBook!.id!,
+        title: _titleController.text.trim(),
+        author: _authorController.text.trim().isEmpty
+            ? null
+            : _authorController.text.trim(),
+        status: BookStatus.wish,
+      );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('免费版最多添加 5 本书')),
-        );
-        Navigator.pushNamed(context, AppRoutes.pro);
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_titleController.text.trim()}》已更新')),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
       }
-      setState(() => _isSaving = false);
-      return;
-    }
+    } else {
+      // 新建模式：检查免费版限制
+      final canAdd = await provider.canAddBook();
+      if (!canAdd) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('免费版最多添加 5 本书')),
+          );
+          Navigator.pushNamed(context, AppRoutes.pro);
+        }
+        setState(() => _isSaving = false);
+        return;
+      }
 
-    final success = await provider.addBook(
-      title: _titleController.text.trim(),
-      author: _authorController.text.trim().isEmpty
-          ? null
-          : _authorController.text.trim(),
-      status: BookStatus.wish,
+      final success = await provider.addBook(
+        title: _titleController.text.trim(),
+        author: _authorController.text.trim().isEmpty
+            ? null
+            : _authorController.text.trim(),
+        status: BookStatus.wish,
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_titleController.text.trim()}》已加入想读')),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+    }
+  }
+
+  /// V3.2 删除书籍（仅编辑模式可用）
+  Future<void> _deleteBook() async {
+    if (!_isEditing || widget.editBook?.id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后数据无法恢复，确定要删除这条记录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确认删除', style: TextStyle(color: Color(0xFFFF6B6B))),
+          ),
+        ],
+      ),
     );
 
-    if (mounted) {
-      setState(() => _isSaving = false);
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('《${_titleController.text.trim()}》已加入想读')),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存失败，请重试')),
-        );
+    if (confirmed == true && mounted) {
+      setState(() => _isDeleting = true);
+      final provider = context.read<BooksProvider>();
+      final success = await provider.deleteBook(widget.editBook!.id!);
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${widget.editBook!.title}》已删除')),
+          );
+          Navigator.pop(context);
+        }
       }
     }
   }
@@ -103,8 +173,8 @@ class _WishBookPageState extends State<WishBookPage> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              '加入想读',
+            Text(
+              _isEditing ? '编辑想读' : '加入想读',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -217,53 +287,105 @@ class _WishBookPageState extends State<WishBookPage> {
               ),
               const SizedBox(height: 32),
 
-              // === 加入想读按钮 ===
-              GestureDetector(
-                onTap: _isSaving ? null : _save,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: _isSaving
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                  ),
-                  child: Center(
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('📋', style: TextStyle(fontSize: 18)),
-                              SizedBox(width: 8),
-                              Text(
-                                '加入想读',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+              // === 按钮区域（V3.2 编辑模式双按钮 / 新建模式单按钮）===
+              if (_isEditing) ...[                
+                // 编辑模式：双按钮并排
+                Row(
+                  children: [
+                    // 左侧：保存按钮（缩小）
+                    Expanded(
+                      flex: 1,
+                      child: GestureDetector(
+                        onTap: (_isSaving || _isDeleting) ? null : _save,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _isSaving
+                                ? null
+                                : [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                          ),
+                          child: Center(
+                            child: _isSaving
+                                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('📋', style: TextStyle(fontSize: 16)),
+                                      SizedBox(width: 6),
+                                      Text('加入想读', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // 右侧：删除按钮
+                    Expanded(
+                      flex: 1,
+                      child: GestureDetector(
+                        onTap: (_isSaving || _isDeleting) ? null : _deleteBook,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF5F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFC9C9), width: 1.5),
+                          ),
+                          child: Center(
+                            child: _isDeleting
+                                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF6B6B)))
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('🗑️', style: TextStyle(fontSize: 16)),
+                                      SizedBox(width: 4),
+                                      Text('删除', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // 新建模式：单按钮全宽
+                GestureDetector(
+                  onTap: _isSaving ? null : _save,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _isSaving
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
-                          ),
+                    ),
+                    child: Center(
+                      child: _isSaving
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('📋', style: TextStyle(fontSize: 18)),
+                                SizedBox(width: 8),
+                                Text('加入想读', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                              ],
+                            ),
+                    ),
                   ),
                 ),
-              ),
+              ],
 
               // 底部提示
               const SizedBox(height: 24),
