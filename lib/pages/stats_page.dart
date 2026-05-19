@@ -1084,6 +1084,7 @@ class _YearlyTrendSection extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
+                  constraints: const BoxConstraints(minHeight: 210),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
