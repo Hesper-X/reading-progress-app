@@ -1051,16 +1051,17 @@ class _YearlyTrendSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final currentYear = now.year;
-    final minDataYear = yearlyTrend.keys.isEmpty
+    final maxDataYear = yearlyTrend.keys.isEmpty
         ? currentYear
-        : yearlyTrend.keys.reduce((a, b) => a < b ? a : b);
+        : yearlyTrend.keys.reduce((a, b) => a > b ? a : b);
 
-    // 从当前年往前推7年作为起始，确保当前年在最左侧
-    final startYear = [minDataYear, currentYear - 7].reduce((a, b) => a < b ? a : b);
+    // 从当前年开始，往右推7年，确保当前年在最左侧
+    // 未来年份数据为0，但保留柱位
+    final endYear = [maxDataYear, currentYear + 7].reduce((a, b) => a > b ? a : b);
 
-    // 年份按降序排列：当前年 → 最旧年（从左到右）
+    // 年份按升序排列：当前年 → 未来（从左到右）
     final years = <int>[];
-    for (int y = currentYear; y >= startYear; y--) {
+    for (int y = currentYear; y <= endYear; y++) {
       years.add(y);
     }
 
