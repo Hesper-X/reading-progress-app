@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/book.dart';
 import '../repositories/book_repository.dart';
 import '../repositories/settings_repository.dart';
@@ -150,10 +152,24 @@ class BooksProvider with ChangeNotifier {
     BookStatus status = BookStatus.reading,
   }) async {
     try {
+      // 将封面图片复制到应用私有目录，避免临时路径失效
+      String? savedCoverPath;
+      if (coverPath != null && coverPath.isNotEmpty) {
+        final dir = await getApplicationDocumentsDirectory();
+        final coversDir = Directory('${dir.path}/covers');
+        if (!await coversDir.exists()) {
+          await coversDir.create(recursive: true);
+        }
+        final ext = coverPath.contains('.') ? '.${coverPath.split('.').last}' : '.jpg';
+        final destPath = '${coversDir.path}/${DateTime.now().millisecondsSinceEpoch}$ext';
+        await File(coverPath).copy(destPath);
+        savedCoverPath = destPath;
+      }
+
       final book = Book(
         title: title,
         author: author ?? '',
-        coverPath: coverPath,
+        coverPath: savedCoverPath,
         startDate: startDate ?? DateTime.now(),
         status: status,
       );
