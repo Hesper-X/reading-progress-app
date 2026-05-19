@@ -327,15 +327,7 @@ class _FinishBookPageState extends State<FinishBookPage> {
                               ),
                             ),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              _ReadingTag(
-                                  text:
-                                      '开始阅读：${widget.book.formattedStartDate}'),
-                              const SizedBox(width: 8),
-                              _ReadingTag(text: '已读 $readingCycle 天'),
-                            ],
-                          ),
+                          _ReadingTag(text: '开始阅读：${widget.book.formattedStartDate}'),
                         ],
                       ),
                     ),
@@ -347,7 +339,14 @@ class _FinishBookPageState extends State<FinishBookPage> {
                 const SizedBox(height: 24),
 
                 // === 读完日期（必填）===
-                _FormLabel(text: '读完日期', required: true),
+                Row(
+                  children: [
+                    const _FormLabel(text: '读完日期', required: true),
+                    const Spacer(),
+                    Text('已读 $readingCycle 天',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF51CF66))),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: _selectDate,
