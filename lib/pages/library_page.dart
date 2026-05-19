@@ -188,11 +188,10 @@ class _WishBookCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
+                  // V3.2 编辑（点击跳转到 /add 路由并传入 Book 对象作为 editData）
                   GestureDetector(
                     onTap: () async {
-                      if (book.id != null) {
-                        await context.read<BooksProvider>().deleteBook(book.id!);
-                      }
+                      await Navigator.pushNamed(context, AppRoutes.add, arguments: book);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -201,7 +200,7 @@ class _WishBookCard extends StatelessWidget {
                         border: Border.all(color: const Color(0xFFDEE2E6), width: 1),
                         color: Colors.white,
                       ),
-                      child: const Text('删除',
+                      child: const Text('编辑',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textSecondary)),
                     ),
                   ),
@@ -311,9 +310,9 @@ class _ReadingBookCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // 放弃（灰色边框胶囊，符合设计稿 action-capsule--secondary）
+                  // V3.2 编辑（点击跳转到 /add 路由并传入 Book 对象作为 editData）
                   GestureDetector(
-                    onTap: () => _abandonBook(context, book),
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.add, arguments: book),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -321,7 +320,7 @@ class _ReadingBookCard extends StatelessWidget {
                         border: Border.all(color: const Color(0xFFADB5BD), width: 1),
                         color: Colors.white,
                       ),
-                      child: const Text('放弃',
+                      child: const Text('编辑',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF868E96))),
                     ),
                   ),
@@ -503,9 +502,30 @@ class _DoneBookCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(book.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(book.title,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    // V3.2 编辑按钮（右上角小胶囊）
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.finish, arguments: book),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFADB5BD), width: 1),
+                          color: Colors.white,
+                        ),
+                        child: const Text('编辑',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF868E96))),
+                      ),
+                    ),
+                  ],
+                ),
                 if (book.author.isNotEmpty)
                   Text(book.author, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),

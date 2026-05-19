@@ -7,7 +7,9 @@ import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
 import '../utils/date_utils.dart' as date_utils;
 
-/// 标记完读页（第二步：完成阅读）— 按设计稿 07_2 标记读完.html 实现
+/// 标记完读页 / 编辑已读模式（V3.2）
+/// - 新建模式：传入 book（在读书籍）→ 标记读完
+/// - 编辑模式：传入 book（已读书籍，从书架编辑跳转）→ 编辑已读
 class FinishBookPage extends StatefulWidget {
   final Book book;
 
@@ -23,12 +25,25 @@ class _FinishBookPageState extends State<FinishBookPage> {
   final _notesController = TextEditingController();
   final _notesFocusNode = FocusNode();
   bool _isSaving = false;
+  bool _isDeleting = false;
   bool _showSuccess = false;
+
+  /// 当前是否为编辑模式（已读状态）
+  bool get _isEditing => widget.book.status == BookStatus.done;
 
   @override
   void initState() {
     super.initState();
-    _readDate = DateTime.now();
+    // 编辑模式：填入现有数据；新建模式：默认今天
+    if (_isEditing) {
+      _readDate = widget.book.readDate ?? DateTime.now();
+      _rating = widget.book.rating?.round() ?? 0;
+      if (widget.book.notes != null && widget.book.notes!.isNotEmpty) {
+        _notesController.text = widget.book.notes!;
+      }
+    } else {
+      _readDate = DateTime.now();
+    }
   }
 
   @override
@@ -52,6 +67,7 @@ class _FinishBookPageState extends State<FinishBookPage> {
     }
   }
 
+  /// 保存（新建模式调 markAsDone；编辑模式调 updateBook）
   Future<void> _save() async {
     if (_rating < 1 || _rating > 5) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,45 +79,120 @@ class _FinishBookPageState extends State<FinishBookPage> {
     setState(() => _isSaving = true);
 
     final provider = context.read<BooksProvider>();
-    final success = await provider.markAsDone(
-      bookId: widget.book.id!,
-      readDate: _readDate,
-      rating: _rating.toDouble(),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
+
+    if (_isEditing) {
+      // 编辑模式：调用 updateBook 保留 id
+      final success = await provider.updateBook(
+        bookId: widget.book.id!,
+        title: widget.book.title,
+        author: widget.book.author,
+        coverPath: widget.book.coverPath,
+        startDate: widget.book.startDate,
+        readDate: _readDate,
+        rating: _rating.toDouble(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        status: BookStatus.done,
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${widget.book.title}》已更新')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+    } else {
+      // 新建模式：调 markAsDone
+      final success = await provider.markAsDone(
+        bookId: widget.book.id!,
+        readDate: _readDate,
+        rating: _rating.toDouble(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          setState(() => _showSuccess = true);
+          Future.delayed(const Duration(seconds: 2), () {
+            if (!mounted) return;
+
+            final provider = context.read<BooksProvider>();
+            final isGoalMet = provider.currentYearCount >= provider.yearlyGoal &&
+                provider.yearlyGoal > 0;
+
+            if (isGoalMet && !provider.celebrationTriggered) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.home,
+                (route) => false,
+              );
+            } else {
+              if (Navigator.of(context).canPop()) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(context, AppRoutes.library);
+              }
+            }
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+    }
+  }
+
+  /// 删除书籍（仅编辑模式可用）
+  Future<void> _deleteBook() async {
+    if (!_isEditing || widget.book.id == null) return;
+
+    // 确认删除弹窗
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后数据无法恢复，确定要删除这条记录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确认删除', style: TextStyle(color: Color(0xFFFF6B6B))),
+          ),
+        ],
+      ),
     );
 
-    if (mounted) {
-      setState(() => _isSaving = false);
-      if (success) {
-        setState(() => _showSuccess = true);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-
-          final provider = context.read<BooksProvider>();
-          final isGoalMet = provider.currentYearCount >= provider.yearlyGoal &&
-              provider.yearlyGoal > 0;
-
-          if (isGoalMet && !provider.celebrationTriggered) {
-            // 清空路由栈并回到首页（MainShell 会监听 provider 弹庆祝）
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.home,
-              (route) => false,
-            );
-          } else {
-            if (Navigator.of(context).canPop()) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushReplacementNamed(context, AppRoutes.library);
-            }
-          }
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存失败，请重试')),
-        );
+    if (confirmed == true && mounted) {
+      setState(() => _isDeleting = true);
+      final provider = context.read<BooksProvider>();
+      final success = await provider.deleteBook(widget.book.id!);
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${widget.book.title}》已删除')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('删除失败，请重试')),
+          );
+        }
       }
     }
   }
@@ -139,6 +230,9 @@ class _FinishBookPageState extends State<FinishBookPage> {
     }
   }
 
+  /// 页面标题
+  String get _pageTitle => _isEditing ? '编辑已读' : '标记读完';
+
   @override
   Widget build(BuildContext context) {
     final readingCycle = widget.book.elapsedDays;
@@ -171,9 +265,9 @@ class _FinishBookPageState extends State<FinishBookPage> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '标记读完',
-                    style: TextStyle(
+                  Text(
+                    _pageTitle,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -224,10 +318,9 @@ class _FinishBookPageState extends State<FinishBookPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if (widget.book.author != null &&
-                              widget.book.author!.isNotEmpty)
+                          if (widget.book.author.isNotEmpty)
                             Text(
-                              widget.book.author!,
+                              widget.book.author,
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
@@ -388,70 +481,165 @@ class _FinishBookPageState extends State<FinishBookPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // === 标记读完按钮 ===
-                GestureDetector(
-                  onTap: _isSaving ? null : _save,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: _isSaving
-                          ? null
-                          : [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                    ),
-                    child: Center(
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('✅', style: TextStyle(fontSize: 18)),
-                                SizedBox(width: 8),
-                                Text(
-                                  '标记读完',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
+                // === 底部按钮 ===
+                // V3.2 编辑模式：双按钮并排；新建模式：单按钮
+                if (_isEditing) ...[
+                  // 编辑模式：双按钮
+                  Row(
+                    children: [
+                      // 左侧：保存按钮（缩小）
+                      Expanded(
+                        flex: 3,
+                        child: GestureDetector(
+                          onTap: (_isSaving || _isDeleting) ? null : _save,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: _isSaving
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                            ),
+                            child: Center(
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text('✅', style: TextStyle(fontSize: 16)),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          '标记读完',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // 右侧：删除按钮
+                      Expanded(
+                        flex: 2,
+                        child: GestureDetector(
+                          onTap: (_isSaving || _isDeleting) ? null : _deleteBook,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF5F5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFFC9C9), width: 1.5),
+                            ),
+                            child: Center(
+                              child: _isDeleting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFFFF6B6B),
+                                      ),
+                                    )
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text('🗑️', style: TextStyle(fontSize: 16)),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          '删除',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B)),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  // 新建模式：单按钮全宽
+                  GestureDetector(
+                    onTap: _isSaving ? null : _save,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: _isSaving
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
-                            ),
-                    ),
-                  ),
-                ),
-
-                // === 放弃阅读 ===
-                const SizedBox(height: 16),
-                Center(
-                  child: GestureDetector(
-                    onTap: _confirmAbandon,
-                    child: Text(
-                      '放弃阅读《${widget.book.title}》',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
-                        decoration: TextDecoration.underline,
+                      ),
+                      child: Center(
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('✅', style: TextStyle(fontSize: 18)),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    '标记读完',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ),
-                ),
+                ],
+
+                // === 放弃阅读（仅新建模式显示）===
+                if (!_isEditing) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: GestureDetector(
+                      onTap: _confirmAbandon,
+                      child: Text(
+                        '放弃阅读《${widget.book.title}》',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
               ],
             ),

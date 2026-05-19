@@ -232,6 +232,48 @@ class BooksProvider with ChangeNotifier {
     }
   }
 
+  /// V3.2 编辑书籍（保留id UPDATE）
+  Future<bool> updateBook({
+    required int bookId,
+    required String title,
+    String? author,
+    String? coverPath,
+    DateTime? startDate,
+    DateTime? readDate,
+    double? rating,
+    String? notes,
+    BookStatus? status,
+  }) async {
+    try {
+      // 找到原有记录
+      final existing = _books.firstWhere((b) => b.id == bookId);
+
+      final updated = Book(
+        id: existing.id,
+        title: title,
+        author: author ?? existing.author,
+        coverPath: coverPath ?? existing.coverPath,
+        startDate: startDate ?? existing.startDate,
+        status: status ?? existing.status,
+        rating: rating ?? existing.rating,
+        notes: notes ?? existing.notes,
+        readDate: readDate ?? existing.readDate,
+        readCount: existing.readCount,
+        abandonedAt: existing.abandonedAt,
+        finishedAt: existing.finishedAt,
+        createdAt: existing.createdAt,
+      );
+
+      await _repository.update(updated);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      _error = '编辑失败: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 更新年度目标
   Future<void> updateYearlyGoal(int goal) async {
     await _settingsRepository.setYearlyGoal(goal);

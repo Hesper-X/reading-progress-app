@@ -31,6 +31,12 @@ class RouteGenerator {
             ),
           );
         }
+        // V3.2：编辑模式，传入 Book 对象
+        if (args is Book) {
+          return MaterialPageRoute(
+            builder: (_) => AddBookPage(editBook: args),
+          );
+        }
         return MaterialPageRoute(builder: (_) => const AddBookPage());
 
       case AppRoutes.finish:

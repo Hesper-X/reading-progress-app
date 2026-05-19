@@ -484,12 +484,27 @@ class _ReadingCard extends StatelessWidget {
                 ],
               ),
             ),
-            // 右侧：已读天数 + 箭头
+            // V3.2 右侧：编辑按钮 + 已读天数 + 箭头
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // V3.2 编辑按钮（点击跳转到 /add 路由编辑）
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.add, arguments: book),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFADB5BD), width: 1),
+                        color: Colors.white,
+                      ),
+                      child: const Text('编辑',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF868E96))),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     '已读 ${book.elapsedDays} 天',
                     style: const TextStyle(

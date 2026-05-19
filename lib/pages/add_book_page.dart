@@ -2,18 +2,22 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../utils/date_utils.dart' as date_utils;
 import '../routes/app_routes.dart';
 
-/// 添加书籍页（第一步：开始阅读）— 按设计稿 07 添加书籍.html 实现
+/// 添加书籍页 / 编辑模式（V3.2）
+/// - 新建模式：传入 initialTitle / initialAuthor（可选）
+/// - 编辑模式：传入 editBook（完整的 Book 对象，从书架编辑跳转）
 class AddBookPage extends StatefulWidget {
   final String? initialTitle;
   final String? initialAuthor;
+  final Book? editBook; // V3.2 编辑模式
 
-  const AddBookPage({super.key, this.initialTitle, this.initialAuthor});
+  const AddBookPage({super.key, this.initialTitle, this.initialAuthor, this.editBook});
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
@@ -21,13 +25,32 @@ class AddBookPage extends StatefulWidget {
 
 class _AddBookPageState extends State<AddBookPage> {
   final _formKey = GlobalKey<FormState>();
-  late final _titleController = TextEditingController(text: widget.initialTitle);
-  late final _authorController = TextEditingController(text: widget.initialAuthor);
+
+  // 获取编辑模式的 book（非空时表示编辑模式）
+  Book? get _editBook => widget.editBook;
+
+  late final TextEditingController _titleController;
+  late final TextEditingController _authorController;
   final _titleFocusNode = FocusNode();
   final _authorFocusNode = FocusNode();
-  DateTime _startDate = DateTime.now();
+  late DateTime _startDate;
   String? _coverPath;
   bool _isSaving = false;
+  bool _isDeleting = false;
+
+  /// 当前是否为编辑模式
+  bool get _isEditing => _editBook != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化表单数据（编辑模式填入现有数据）
+    final edit = widget.editBook;
+    _titleController = TextEditingController(text: widget.initialTitle ?? edit?.title ?? '');
+    _authorController = TextEditingController(text: widget.initialAuthor ?? edit?.author ?? '');
+    _startDate = edit?.startDate ?? DateTime.now();
+    _coverPath = edit?.coverPath;
+  }
 
   @override
   void dispose() {
@@ -112,6 +135,7 @@ class _AddBookPageState extends State<AddBookPage> {
     }
   }
 
+  /// 保存（新建模式：addBook；编辑模式：updateBook）
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -119,41 +143,131 @@ class _AddBookPageState extends State<AddBookPage> {
 
     final provider = context.read<BooksProvider>();
 
-    // 检查免费版限制
-    final canAdd = await provider.canAddBook();
-    if (!canAdd) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('免费版最多添加 5 本书')),
-        );
-        Navigator.pushNamed(context, AppRoutes.pro);
-      }
-      setState(() => _isSaving = false);
-      return;
-    }
+    if (_isEditing) {
+      // 编辑模式：调用 updateBook 保留 id
+      final success = await provider.updateBook(
+        bookId: _editBook!.id!,
+        title: _titleController.text.trim(),
+        author: _authorController.text.trim().isEmpty
+            ? null
+            : _authorController.text.trim(),
+        coverPath: _coverPath,
+        startDate: _startDate,
+        status: _editBook!.status,
+      );
 
-    final success = await provider.addBook(
-      title: _titleController.text.trim(),
-      author: _authorController.text.trim().isEmpty
-          ? null
-          : _authorController.text.trim(),
-      coverPath: _coverPath,
-      startDate: _startDate,
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_titleController.text.trim()}》已更新')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+    } else {
+      // 新建模式：检查免费版限制
+      final canAdd = await provider.canAddBook();
+      if (!canAdd) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('免费版最多添加 5 本书')),
+          );
+          Navigator.pushNamed(context, AppRoutes.pro);
+        }
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      final success = await provider.addBook(
+        title: _titleController.text.trim(),
+        author: _authorController.text.trim().isEmpty
+            ? null
+            : _authorController.text.trim(),
+        coverPath: _coverPath,
+        startDate: _startDate,
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_titleController.text.trim()}》已加入在读')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+    }
+  }
+
+  /// 删除书籍（仅编辑模式可用）
+  Future<void> _deleteBook() async {
+    if (!_isEditing || _editBook?.id == null) return;
+
+    // 确认删除弹窗
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后数据无法恢复，确定要删除这条记录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确认删除', style: TextStyle(color: Color(0xFFFF6B6B))),
+          ),
+        ],
+      ),
     );
 
-    if (mounted) {
-      setState(() => _isSaving = false);
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('《${_titleController.text.trim()}》已加入在读')),
-        );
-        Navigator.pop(context, true);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存失败，请重试')),
-        );
+    if (confirmed == true && mounted) {
+      setState(() => _isDeleting = true);
+      final provider = context.read<BooksProvider>();
+      final success = await provider.deleteBook(_editBook!.id!);
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_editBook!.title}》已删除')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('删除失败，请重试')),
+          );
+        }
       }
     }
+  }
+
+  /// 根据编辑模式状态获取页面标题
+  String get _pageTitle {
+    if (!_isEditing) return '开始阅读';
+    switch (_editBook!.status) {
+      case BookStatus.wish:
+        return '编辑想读';
+      case BookStatus.reading:
+        return '编辑在读';
+      default:
+        return '编辑';
+    }
+  }
+
+  /// 获取底部主按钮的文字和图标（编辑模式缩小；新建模式保持原样）
+  String get _primaryButtonLabel {
+    if (!_isEditing) return '开始阅读';
+    return _editBook!.status == BookStatus.wish ? '📋 加入想读' : '📖 开始阅读';
   }
 
   @override
@@ -184,9 +298,9 @@ class _AddBookPageState extends State<AddBookPage> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              '开始阅读',
-              style: TextStyle(
+            Text(
+              _pageTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -379,53 +493,142 @@ class _AddBookPageState extends State<AddBookPage> {
               ),
               const SizedBox(height: 32),
 
-              // === 开始阅读按钮 ===
-              GestureDetector(
-                onTap: _isSaving ? null : _save,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: _isSaving
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                  ),
-                  child: Center(
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('📖', style: TextStyle(fontSize: 18)),
-                              SizedBox(width: 8),
-                              Text(
-                                '开始阅读',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+              // === 底部按钮 ===
+              // V3.2 编辑模式：双按钮并排
+              // 新建模式：单按钮全宽
+              if (_isEditing) ...[
+                // 编辑模式：双按钮
+                Row(
+                  children: [
+                    // 左侧：保存按钮（缩小）
+                    Expanded(
+                      flex: 3,
+                      child: GestureDetector(
+                        onTap: (_isSaving || _isDeleting) ? null : _save,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _isSaving
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                          ),
+                          child: Center(
+                            child: _isSaving
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(_primaryButtonLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // 右侧：删除按钮（粉色背景 + 红色边框 + 红色文字）
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: (_isSaving || _isDeleting) ? null : _deleteBook,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF5F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFC9C9), width: 1.5),
+                          ),
+                          child: Center(
+                            child: _isDeleting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFFFF6B6B),
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('🗑️', style: TextStyle(fontSize: 16)),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        '删除',
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B)),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // 新建模式：单按钮全宽
+                GestureDetector(
+                  onTap: _isSaving ? null : _save,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _isSaving
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
-                          ),
+                    ),
+                    child: Center(
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('📖', style: TextStyle(fontSize: 18)),
+                                SizedBox(width: 8),
+                                Text(
+                                  '开始阅读',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
