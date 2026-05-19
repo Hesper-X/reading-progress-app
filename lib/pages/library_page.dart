@@ -191,7 +191,7 @@ class _WishBookCard extends StatelessWidget {
                   // V3.2 编辑（点击跳转到 /add 路由并传入 Book 对象作为 editData）
                   GestureDetector(
                     onTap: () async {
-                      await Navigator.pushNamed(context, AppRoutes.add, arguments: book);
+                      await Navigator.pushNamed(context, AppRoutes.wish, arguments: book);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
