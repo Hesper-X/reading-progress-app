@@ -356,21 +356,21 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
           // 分享卡片主体（红色渐变）—— 此区域用于截图生成
           RepaintBoundary(
             key: widget.previewKey,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: ColoredBox(
-                color: Colors.white, // 截图背景白色，防止圆角外透明区域变黑
-                child: Container(
-                width: double.infinity,
-                // 庆祝模式时顶部内边距缩小，让装饰更贴近上边界
-                padding: EdgeInsets.fromLTRB(24, isCelebration ? 12 : 24, 24, 24),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
-                  ),
-                ),
+            child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,  // 背景白色，截图时圆角外区域为白而非黑
+            ),
+            child: Container(
+            width: double.infinity,
+            // 庆祝模式时顶部内边距缩小，让装饰更贴近上边界
+            padding: EdgeInsets.fromLTRB(24, isCelebration ? 12 : 24, 24, 24),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
+              ),
+            ),
             child: Stack(
               children: [
                 // 金色微光背景（V3.1庆祝模式 — 极淡渐变）
@@ -520,7 +520,6 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
         ),
       ),
     ),
-      ),
     ),
         ],
       ),
