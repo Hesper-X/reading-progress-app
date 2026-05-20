@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../providers/books_provider.dart';
 import '../services/reminder_scheduler.dart';
 import '../services/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/purchase_provider.dart';
 import '../providers/books_provider.dart';
 import '../repositories/book_repository.dart';
@@ -338,7 +339,33 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  /// 检测精确闹钟权限，未开启时弹系统原生请求并重新调度
+  Future<void> _requestExactAlarmPermissionIfNeeded() async {
+    try {
+      final androidPlugin = NotificationService().platform
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin == null) return;
 
+      final canSchedule = await androidPlugin.canScheduleExactNotifications();
+      if (canSchedule == false) {
+        // 弹出系统原生精确闹钟权限请求
+        await androidPlugin.requestExactAlarmsPermission();
+
+        // 重新检测（用户刚点了 Allow）
+        final retry = await androidPlugin.canScheduleExactNotifications();
+        if (retry == true) {
+          // 权限已获取，重新调度（使启用 exact 模式）
+          await ReminderScheduler().updateSchedule(
+            booksProvider: context.read<BooksProvider>(),
+            settingsProvider: context.read<SettingsProvider>(),
+          );
+        }
+      }
+    } catch (_) {
+      // 低版本 Android 或异常情况，静默忽略
+    }
+  }
 
   // ============ 关于页 ============
 
@@ -438,6 +465,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (v) {
                   // 开启提醒前先申请通知权限（Android 13+）
                   await NotificationService().requestPermissions();
+
+                  // Android 13+：检测并引导精确闹钟权限
+                  if (mounted) {
+                    await _requestExactAlarmPermissionIfNeeded();
+                  }
                 }
                 await context.read<SettingsProvider>().setDailyReminder(v);
                 setState(() => _reminderEnabled = v);

@@ -595,7 +595,7 @@ Widget _emptyState(BuildContext context, String title, String subtitle) {
         ],
         const SizedBox(height: 16),
         GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.add),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.wish),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),

@@ -24,18 +24,9 @@ class ReminderScheduler {
   ReminderScheduler._internal();
 
   final NotificationService _notif = NotificationService();
-  bool _tzInitialized = false;
 
   /// 通知 ID（每日固定，新通知自动覆盖旧通知）
   static const int _notificationId = 1001;
-
-  /// 初始化时区数据（只需一次）
-  void _ensureTz() {
-    if (!_tzInitialized) {
-      tz_data.initializeTimeZones();
-      _tzInitialized = true;
-    }
-  }
 
   /// 生成提醒正文
   /// - 有在读书籍 → 「《XXX》还在读吗？」
@@ -47,80 +38,57 @@ class ReminderScheduler {
     return null; // 无在读书籍不推送
   }
 
-  /// 计算今日目标时间（本地时区）
-  /// 如果已过则返回明天的同一时间
-  tz.TZDateTime _nextReminderTime(String timeStr) {
-    _ensureTz();
-    final local = tz.local;
-    final parts = timeStr.split(':');
+  /// 使用 schedule 实现持久每日定时（通过 AlarmManager）
+  Future<void> _zonedSchedule(String nextBody) async {
+    await _notif.init();
+
+    // 确保时区数据已初始化（tz.TZDateTime.utc 需要）
+    tz_data.initializeTimeZones();
+
+    final settingsProvider = _lastSettings;
+    if (settingsProvider == null) return;
+
+    // 用本地 DateTime 计算目标时间，避免时区偏差
+    final now = DateTime.now();
+    final parts = settingsProvider.reminderTime.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
 
-    final now = tz.TZDateTime.now(local);
-    var scheduled = tz.TZDateTime(local, now.year, now.month, now.day, hour, minute);
-
-    if (scheduled.isBefore(now) || scheduled.isAtSameMomentAs(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    if (scheduledDate.isBefore(now) || scheduledDate.isAtSameMomentAs(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    return scheduled;
-  }
+    debugPrint('[Reminder] 持久调度: ${scheduledDate.toString()} (${settingsProvider.reminderTime}), ts=${scheduledDate.millisecondsSinceEpoch}');
 
-  /// 通过 Android AlarmManager 调度每日提醒
-  ///
-  /// 使用 [zonedSchedule] 设置一次性提醒，配合 [matchDateTimeComponents]
-  /// 参数 [DateTimeComponents.time] 实现每日重复。
-  /// 这是系统级调度，App 被杀死后依然触发。
-  Future<void> _scheduleAlarm(String nextBody) async {
-    await _notif.init();
-    _ensureTz();
+    // 检测是否支持精确闹钟
+    bool canScheduleExact = false;
+    try {
+      final androidPlugin = _notif.platform
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      canScheduleExact = await androidPlugin?.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      canScheduleExact = false;
+    }
 
-    final settingsProvider = _lastSettings;
-    if (settingsProvider == null) return;
+    if (!canScheduleExact) {
+      debugPrint('[Reminder] 精确闹钟权限未授权，将使用非精确模式（可能延迟）');
+    }
 
-    final scheduledDate = _nextReminderTime(settingsProvider.reminderTime);
+    // 用 tz.local 时区构造 TZDateTime
+    // 将本地时间转为 UTC 日历时间，然后构造 UTC 时区的 TZDateTime
+    // 这样 millisecondsSinceEpoch 就是正确的 UTC 时间戳
+    final utcDt = scheduledDate.toUtc();
+    final utcDate = tz.TZDateTime.utc(utcDt.year, utcDt.month, utcDt.day, utcDt.hour, utcDt.minute);
 
-    await _notif.platform.show(
-      _notificationId,
-      '阅读提醒',
-      nextBody,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_reading_reminder',
-          '每日阅读提醒',
-          channelDescription: '提醒你阅读在读书籍',
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: 'reading_reminder',
-    );
-  }
-
-  /// 通过 zonedSchedule 实现持久每日定时
-  Future<void> _zonedSchedule(String nextBody) async {
-    await _notif.init();
-    _ensureTz();
-
-    final settingsProvider = _lastSettings;
-    if (settingsProvider == null) return;
-
-    final scheduledDate = _nextReminderTime(settingsProvider.reminderTime);
-
-    debugPrint('[Reminder] 持久调度: ${scheduledDate.toString()} (${settingsProvider.reminderTime})');
+    debugPrint('[Reminder] local: ${scheduledDate.toString()}, toUtc: ${utcDt.toString()}, tz_utc:${utcDate.toString()}, ms=${utcDate.millisecondsSinceEpoch}');
 
     await _notif.platform.zonedSchedule(
       _notificationId,
       '阅读提醒',
       nextBody,
-      scheduledDate,
+      utcDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reading_reminder',
@@ -137,8 +105,10 @@ class ReminderScheduler {
           presentSound: true,
         ),
       ),
-      // Android 4.4+ 全部支持 exact 模式，保证准时触发
-      androidScheduleMode: AndroidScheduleMode.exact,
+      // 有精确闹钟权限用 exact，没有则用 inexactAllowWhileIdle 兜底
+      androidScheduleMode: canScheduleExact
+          ? AndroidScheduleMode.exact
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time, // 每日重复
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,

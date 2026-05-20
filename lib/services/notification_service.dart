@@ -43,6 +43,9 @@ class NotificationService {
 
     await _plugin.initialize(initSettings);
     _initialized = true;
+
+    // 初始化时同时创建通知渠道
+    await _ensureChannel();
   }
 
   /// 创建/更新通知渠道（Android 8.0+ 必需）

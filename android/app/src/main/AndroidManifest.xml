@@ -52,6 +52,11 @@
                 <action android:name="com.hespe.reading_progress.DAILY_REMINDER" />
             </intent-filter>
         </receiver>
+
+        <!-- flutter_local_notifications 定时通知调度接收器（Android 8+ 需显式声明） -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
