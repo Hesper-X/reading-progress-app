@@ -75,21 +75,8 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
           _previewKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
 
-      final rawImage = await boundary.toImage(pixelRatio: 3.0);
-
-      // 用 Canvas 做圆角裁剪（clipRRect 对 PictureRecorder 生效）
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final clipRRect = RRect.fromRectAndRadius(
-        Offset.zero & Size(rawImage.width.toDouble(), rawImage.height.toDouble()),
-        const Radius.circular(36), // borderRadius(12) * pixelRatio(3.0)
-      );
-      canvas.clipRRect(clipRRect);
-      canvas.drawImage(rawImage, Offset.zero, Paint());
-      final picture = recorder.endRecording();
-      final roundImage = await picture.toImage(rawImage.width, rawImage.height);
-
-      final byteData = await roundImage.toByteData(format: ui.ImageByteFormat.png);
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
 
       // 保存临时文件
@@ -99,8 +86,8 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
 
       if (!mounted) return;
 
-      // 弹窗预览（用圆角后的图片）
-      _showShareModal(roundImage, file);
+      // 弹窗预览
+      _showShareModal(image, file);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -373,9 +360,8 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
             width: double.infinity,
             // 庆祝模式时顶部内边距缩小，让装饰更贴近上边界
             padding: EdgeInsets.fromLTRB(24, isCelebration ? 12 : 24, 24, 24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
