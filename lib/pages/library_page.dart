@@ -259,19 +259,13 @@ class _ReadingBookCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 左侧：📖 封面图标（设计稿粉色渐变圆角）
-          Container(
+          // 左侧：封面图片（有真实封面时显示，否则 emoji 占位）
+          BookCover(
+            coverPath: book.coverPath,
             width: 44,
             height: 56,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
-              ),
-              borderRadius: BorderRadius.all(Radius.circular(6)),
-            ),
-            child: const Center(child: Text('📖', style: TextStyle(fontSize: 22))),
+            borderRadius: 6,
+            reading: true,
           ),
           const SizedBox(width: 12),
           // 中间：书名 + 作者
