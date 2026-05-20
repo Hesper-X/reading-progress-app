@@ -7,6 +7,7 @@ import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
+import '../widgets/book_cover.dart';
 
 /// 环形进度条组件 — 支持庆祝动画模式
 class CircularProgress extends StatefulWidget {
@@ -441,19 +442,12 @@ class _ReadingCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Row(
           children: [
-            // 设计稿：44x56 书本emoji图标（粉色渐变背景）
-            Container(
+            BookCover(
+              coverPath: book.coverPath,
               width: 44,
               height: 56,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
-                ),
-                borderRadius: BorderRadius.all(Radius.circular(6)),
-              ),
-              child: const Center(child: Text('📖', style: TextStyle(fontSize: 22))),
+              borderRadius: 6,
+              reading: true,
             ),
             const SizedBox(width: 14),
             // 标题 + 作者（flex: 1撑开，让已读天数靠右）

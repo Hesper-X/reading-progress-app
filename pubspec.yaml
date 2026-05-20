@@ -1,7 +1,7 @@
 name: reading_progress
 description: 把你读完的书，变成一种生命的进度
 publish_to: 'none'
-version: 3.1.0+6
+version: 3.2.0+7
 
 environment:
   sdk: ^3.11.4
@@ -25,6 +25,8 @@ dependencies:
   shared_preferences: ^2.2.0
   flutter_svg: ^2.0.9
   flutter_local_notifications: ^17.2.3
+  image_gallery_saver_plus: ^4.0.1
+  app_settings: ^7.0.0
 
 dev_dependencies:
   flutter_test:

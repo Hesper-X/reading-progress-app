@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import '../models/book.dart';
 import '../models/filter_state.dart';
 import '../providers/books_provider.dart';
@@ -117,9 +118,30 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
         },
         onSave: () async {
           Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('已保存到相册')),
-          );
+          try {
+            final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+            if (bytes != null) {
+              await ImageGallerySaverPlus.saveImage(
+                bytes.buffer.asUint8List(),
+                name: '读书进度_${DateTime.now().millisecondsSinceEpoch}',
+                isReturnImagePathOfIOS: false,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ 已保存到相册'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('保存失败: $e')),
+              );
+            }
+          }
         },
         onEdit: () => Navigator.pop(ctx),
       ),

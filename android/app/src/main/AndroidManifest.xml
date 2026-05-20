@@ -1,10 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 10+ 存储权限（用于封面图片读取） -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <!-- Android 13+ 细粒度媒体权限（替代上面两个） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- Android 13+ 通知权限 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 精确闹钟权限（Android 12+ 后台精确调度） -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <!-- 开机自启（可选，提高重启后恢复提醒的可靠性） -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="reading_progress"
         android:name="${applicationName}"

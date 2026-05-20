@@ -3,9 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:app_settings/app_settings.dart';
 import '../providers/settings_provider.dart';
 import '../providers/books_provider.dart';
 import '../services/reminder_scheduler.dart';
+import '../services/notification_service.dart';
 import '../providers/purchase_provider.dart';
 import '../providers/books_provider.dart';
 import '../repositories/book_repository.dart';
@@ -308,6 +310,18 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  /// 导航到系统精确闹钟设置页（Android 12+）
+  Future<void> _openExactAlarmSettings() async {
+    try {
+      await AppSettings.openAppSettings(type: AppSettingsType.settings);
+    } catch (_) {
+      // 降级：打开应用详情设置
+      if (Platform.isAndroid) {
+        await AppSettings.openAppSettings();
+      }
+    }
+  }
+
   // ============ 关于页 ============
 
   Future<void> _showAboutDialog() async {
@@ -403,6 +417,10 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle2: '无在读书籍时不会打扰你',
               switchValue: _reminderEnabled,
               onSwitchChanged: (v) async {
+                if (v) {
+                  // 开启提醒前先申请通知权限（Android 13+）
+                  await NotificationService().requestPermissions();
+                }
                 await context.read<SettingsProvider>().setDailyReminder(v);
                 setState(() => _reminderEnabled = v);
                 // 同步调度/取消每日提醒
