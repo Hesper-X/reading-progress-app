@@ -29,7 +29,6 @@ class _SettingsPageState extends State<SettingsPage> {
   int _goal = 50;
   bool _reminderEnabled = false;
   String _reminderTime = '21:00';
-
   @override
   void initState() {
     super.initState();
@@ -307,20 +306,39 @@ class _SettingsPageState extends State<SettingsPage> {
           const SnackBar(content: Text('提醒已设置')),
         );
       }
-    }
-  }
 
-  /// 导航到系统精确闹钟设置页（Android 12+）
-  Future<void> _openExactAlarmSettings() async {
-    try {
-      await AppSettings.openAppSettings(type: AppSettingsType.settings);
-    } catch (_) {
-      // 降级：打开应用详情设置
-      if (Platform.isAndroid) {
-        await AppSettings.openAppSettings();
+      // Android 12+：引导用户授权精确闹钟，确保提醒准时
+      // 精确闹钟权限在 Android 12+ 需要用户手动在系统设置中开启
+      // 此处弹窗引导用户跳转到系统设置
+      if (Platform.isAndroid && mounted) {
+        final sdkVersion = int.tryParse(Platform.version.split(' ').first) ?? 0;
+        if (sdkVersion >= 31) { // Android 12+ (API 31)
+          final shouldOpen = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('确保提醒准时触发'),
+              content: const Text('请允许「Reading Progress」使用精确闹钟权限，以确保每日提醒准时送达。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('暂不设置'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('去设置'),
+                ),
+              ],
+            ),
+          );
+          if (shouldOpen == true && mounted) {
+            await AppSettings.openAppSettings(type: AppSettingsType.settings);
+          }
+        }
       }
     }
   }
+
+
 
   // ============ 关于页 ============
 
