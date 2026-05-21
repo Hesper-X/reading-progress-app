@@ -108,6 +108,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, tempGoal),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('保存'),
+                      ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
                         style: TextButton.styleFrom(
@@ -118,14 +126,6 @@ class _SettingsPageState extends State<SettingsPage> {
                           foregroundColor: const Color(0xFF868E96),
                         ),
                         child: const Text('取消', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, tempGoal),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('保存'),
                       ),
                     ],
                   ),

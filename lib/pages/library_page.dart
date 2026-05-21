@@ -104,7 +104,7 @@ class _WishTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (books.isEmpty) {
-      return _emptyState(context, '还没有想读的书', '点击 + 添加想看的书');
+      return _emptyState(context, '还没有想读的书', '点击首页 [+读书清单] 添加想读的书');
     }
     final sorted = List<Book>.from(books)
       ..sort((a, b) => (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000)));
@@ -228,7 +228,7 @@ class _ReadingTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (books.isEmpty) {
-      return _emptyState(context, '还没有在读书籍', '开始阅读后，它们会出现在这里');
+      return _emptyState(context, '还没有在读书籍', '在[首页]或者[书架]的[想读]清单，点击[开始阅读]后，\n它们会出现在这里');
     }
     final sorted = List<Book>.from(books)
       ..sort((a, b) => (b.startDate).compareTo(a.startDate));
@@ -492,7 +492,7 @@ class _DoneTabState extends State<_DoneTab> {
       // 列表
       Expanded(
         child: filtered.isEmpty
-            ? _emptyState(context, _hasFilter ? '没有找到匹配的书籍' : '还没有读完的书籍', '')
+            ? _emptyState(context, _hasFilter ? '没有找到匹配的书籍' : '还没有读完的书籍', '在[在读]清单或者[已读]页，点击[标记已读]，\n它们会出现在这里')
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: filtered.length,
@@ -614,7 +614,7 @@ class _DoneBookCard extends StatelessWidget {
 // ============ 通用组件 ============
 
 /// 空状态提示
-Widget _emptyState(BuildContext context, String title, String subtitle) {
+Widget _emptyState(BuildContext context, String title, String subtitle, {bool showAddButton = false}) {
   return Center(
     child: Padding(
       padding: const EdgeInsets.all(20),
@@ -626,15 +626,17 @@ Widget _emptyState(BuildContext context, String title, String subtitle) {
           const SizedBox(height: 8),
           Text(subtitle, style: const TextStyle(fontSize: 14, color: AppColors.textMuted)),
         ],
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.wish),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
-            child: const Text('去添加', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+        if (showAddButton) ...[          
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.wish),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
+              child: const Text('去添加', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+            ),
           ),
-        ),
+        ],
       ]),
     ),
   );

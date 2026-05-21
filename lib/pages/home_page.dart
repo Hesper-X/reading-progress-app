@@ -834,7 +834,7 @@ class _EmptyHint extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            '点击右下角 + 开始记录第一本要读的书',
+            '点击右下角 [+开始阅读] 记录第一本在读的书',
             style: TextStyle(fontSize: 14, color: AppColors.textMuted),
           ),
         ],
