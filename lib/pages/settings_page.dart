@@ -267,16 +267,41 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 16),
               SizedBox(
                 height: 160,
-                child: CupertinoTimerPicker(
-                  mode: CupertinoTimerPickerMode.hm,
-                  initialTimerDuration: Duration(
-                    hours: int.tryParse(time.split(':')[0]) ?? 21,
-                    minutes: int.tryParse(time.split(':')[1]) ?? 0,
-                  ),
-                  onTimerDurationChanged: (duration) {
-                    time =
-                        '${duration.inHours.toString().padLeft(2, '0')}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}';
-                  },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: int.tryParse(time.split(':')[0]) ?? 21,
+                        ),
+                        itemExtent: 32,
+                        onSelectedItemChanged: (i) {
+                          final h = i.toString().padLeft(2, '0');
+                          final m = time.split(':')[1];
+                          time = '$h:$m';
+                        },
+                        children: List.generate(24, (i) =>
+                          Center(child: Text(i.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 20)))),
+                      ),
+                    ),
+                    const Center(child: Text('时', style: TextStyle(fontSize: 20))),
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: int.tryParse(time.split(':')[1]) ?? 0,
+                        ),
+                        itemExtent: 32,
+                        onSelectedItemChanged: (i) {
+                          final h = time.split(':')[0];
+                          final m = i.toString().padLeft(2, '0');
+                          time = '$h:$m';
+                        },
+                        children: List.generate(60, (i) =>
+                          Center(child: Text(i.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 20)))),
+                      ),
+                    ),
+                    const Center(child: Text('分', style: TextStyle(fontSize: 20))),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
