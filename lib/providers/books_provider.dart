@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/book.dart';
@@ -181,6 +181,12 @@ class BooksProvider with ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// V3.3 已读新增模式：直接将一书标记为已读（非从在读流转）
+  Future<void> addDoneBook(Book book) async {
+    await _repository.insert(book);
+    await loadBooks();
   }
 
   /// 标记读完（V3.0：rating 改用 double）

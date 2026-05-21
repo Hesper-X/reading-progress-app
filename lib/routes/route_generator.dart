@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../pages/splash_page.dart';
 import '../pages/add_book_page.dart';
 import '../pages/finish_book_page.dart';
 import '../pages/main_shell.dart';
 import '../pages/pro_page.dart';
 import '../pages/wish_book_page.dart';
+import '../pages/add_done_book_page.dart';
 import '../models/book.dart';
 import 'app_routes.dart';
 
@@ -63,6 +64,9 @@ class RouteGenerator {
           return MaterialPageRoute(builder: (_) => WishBookPage(editBook: wishArgs));
         }
         return MaterialPageRoute(builder: (_) => const WishBookPage());
+
+      case AppRoutes.addDone:
+        return MaterialPageRoute(builder: (_) => const AddDoneBookPage());
 
       case AppRoutes.settings:
         return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 4));

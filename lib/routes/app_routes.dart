@@ -1,4 +1,4 @@
-/// 应用路由定义（V3.0：移除阅读生涯/年度总结独立路由）
+﻿/// 应用路由定义（V3.0：移除阅读生涯/年度总结独立路由）
 class AppRoutes {
   AppRoutes._();
 
@@ -12,4 +12,5 @@ class AppRoutes {
   static const String pro = '/pro';
   static const String settings = '/settings';
   static const String wish = '/wish';
+  static const String addDone = '/add-done';
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
@@ -409,25 +409,58 @@ class _DoneTabState extends State<_DoneTab> {
   Widget build(BuildContext context) {
     final filtered = _filteredBooks;
     return Column(children: [
+      // ══ V3.3 新增：已读添加横条 ══
+      GestureDetector(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.addDone),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFDEE2E6), width: 2),
+            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFFFAFAFA),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('+',
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: Color(0xFFFF6B6B),
+                      fontWeight: FontWeight.w300)),
+              const SizedBox(width: 6),
+              const Text('标记已读',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFFFF6B6B),
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      ),
+
       // 筛选/排序栏 — 按设计稿：整体靠左，上排年份下排排序
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 年份 Chips
-            Row(
-              children: [
-                _YearChip(label: '全部', isActive: !_hasFilter,
-                    onTap: () => setState(() => _selectedYear = null)),
-                const SizedBox(width: 6),
-                ..._availableYears.map((y) => Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: _YearChip(
-                      label: '$y', isActive: _selectedYear == y,
-                      onTap: () => setState(() => _selectedYear = _selectedYear == y ? null : y)),
-                )),
-              ],
+            // 年份 Chips — V3.3：横向滚动（overflow-x: auto + 隐藏滚动条）
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _YearChip(label: '全部', isActive: !_hasFilter,
+                      onTap: () => setState(() => _selectedYear = null)),
+                  const SizedBox(width: 6),
+                  ..._availableYears.map((y) => Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: _YearChip(
+                        label: '$y', isActive: _selectedYear == y,
+                        onTap: () => setState(() => _selectedYear = _selectedYear == y ? null : y)),
+                  )),
+                ],
+              ),
             ),
             const SizedBox(height: 6),
             // 排序按钮组
