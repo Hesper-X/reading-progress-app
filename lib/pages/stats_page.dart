@@ -22,9 +22,30 @@ class StatsPage extends StatelessWidget {
         shape: const Border(
           bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1),
         ),
-        title: const Text(
-          '阅读统计',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        title: Row(
+          children: [
+            const Text(
+              '阅读统计',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const Spacer(),
+            // ★ V3.3 Pro版导航栏右侧标识
+            Builder(builder: (context) {
+              final isPro = context.watch<FilterProvider>().state.isPro;
+              if (isPro) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text('Pro ✓',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+          ],
         ),
       ),
       body: Consumer2<BooksProvider, FilterProvider>(
@@ -60,6 +81,10 @@ class StatsPage extends StatelessWidget {
                 if (!filter.isPro)
                   _ProTipBar(),
 
+                // ★ V3.3 年度统计标题
+                const Text('📊 年度统计', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+                const SizedBox(height: 12),
+
                 // === 1. 顶部统计卡片 ===
                 _TopCards(
                   currentMonthCount: currentMonthCount,
@@ -81,13 +106,7 @@ class StatsPage extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
 
-                // === 3. 阅读生涯·年度趋势（V3.1 蓝色系柱状图，放月度趋势下方） ===
-                _YearlyTrendSection(
-                  yearlyTrend: booksProvider.getYearlyTrend(),
-                  isPro: filter.isPro,
-                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
-                ),
-                const SizedBox(height: 20),
+                // ★ V3.3 年度趋势已移至底部生涯模块
 
                 // === 4. 最爱书籍 Top3 ===
                 Row(children: [
@@ -117,15 +136,133 @@ class StatsPage extends StatelessWidget {
 
                 // V3.1: 年度趋势已移至月度趋势下方（#3）
 
-                // === 底部按钮「我的阅读生涯」（V3.1: 基础版遮罩锁定/Pro版可用） ===
-                _CareerButton(
-                  isPro: filter.isPro,
-                  onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
-                  onTap: () {
-                    filterProvider.switchToAllYearsFromLife();
-                    Navigator.pushNamed(context, '/share');
-                  },
+                // ★ V3.3 分隔线（仅Pro版）
+                if (filter.isPro)
+                  Container(
+                    width: double.infinity,
+                    height: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    color: const Color(0xFFDEE2E6),
+                  ),
+
+                // ★ V3.3 底部生涯模块标题（基础版保留标题，遮罩不覆盖标题）
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Text('🏆 我的阅读生涯',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+                    if (filter.isPro)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B6B),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Pro',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+
+                // ★ V3.3 生涯摘要（三栏）
+                _CareerSummary(doneBooks: doneBooks),
+                const SizedBox(height: 16),
+
+                // ★ V3.3 年度趋势柱状图（移入底部生涯模块；基础版被遮罩覆盖）
+                // 基础版用一个Stack包裹（摘要+年度趋势+按钮），上面覆盖遮罩
+                // 标题留在外面不被遮
+                if (filter.isPro)
+                  Column(
+                    children: [
+                      _YearlyTrendSection(
+                        yearlyTrend: booksProvider.getYearlyTrend(),
+                        isPro: true,
+                        onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                      ),
+                      const SizedBox(height: 16),
+                      _CareerButton(
+                        isPro: true,
+                        onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                        onTap: () {
+                          filterProvider.switchToAllYearsFromLife();
+                          Navigator.pushNamed(context, '/share');
+                        },
+                      ),
+                    ],
+                  )
+                else
+                  // 基础版：遮罩锁覆盖整个内容区域
+                  Stack(
+                    children: [
+                      Column(
+                        children: [
+                          _YearlyTrendSection(
+                            yearlyTrend: booksProvider.getYearlyTrend(),
+                            isPro: false,
+                            onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                          ),
+                          const SizedBox(height: 16),
+                          _CareerButton(
+                            isPro: false,
+                            onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
+                            onTap: () {
+                              filterProvider.switchToAllYearsFromLife();
+                              Navigator.pushNamed(context, '/share');
+                            },
+                          ),
+                        ],
+                      ),
+                      // 磨砂遮罩覆盖整个内容区域
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                              child: GestureDetector(
+                                onTap: () => Navigator.pushNamed(context, '/pro'),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Color(0xFFDEE2E6),
+                                        ),
+                                        child: const Center(
+                                            child: Text('🔒', style: TextStyle(fontSize: 18))),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text('升级 Pro 查看阅读生涯',
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF868E96))),
+                                      const SizedBox(height: 4),
+                                      const Text('解锁全部年份数据汇总',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFFADB5BD))),
+                                      const SizedBox(height: 12),
+                                      _UpgradeProBtn(
+                                          onTap: () =>
+                                              Navigator.pushNamed(context, '/pro')),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -892,7 +1029,7 @@ class _CareerButton extends StatelessWidget {
         ],
       ),
       child: const Center(
-        child: Text('我的阅读生涯',
+        child: Text('生成阅读生涯预览',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
       ),
     );
@@ -901,41 +1038,8 @@ class _CareerButton extends StatelessWidget {
       return GestureDetector(onTap: onTap, child: buttonWidget);
     }
 
-    // 基础版：设计稿磨砂遮罩 — rgba(255,255,255,0.75) + backdrop-filter blur(2px)，点击跳转Pro升级页
-    return GestureDetector(
-      onTap: onUpgradeTap,
-      child: Stack(
-        children: [
-          buttonWidget,
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                color: Colors.white.withValues(alpha: 0.75),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                  child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 24, height: 24,
-                        decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFDEE2E6)),
-                        child: const Center(child: Text('🔒', style: TextStyle(fontSize: 14))),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('升级 Pro 查看阅读生涯',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-    );
+    // 基础版遮罩由外部 Stack 控制
+    return GestureDetector(onTap: onUpgradeTap, child: buttonWidget);
   }
 }
 
@@ -1030,6 +1134,61 @@ class _EmptyCard extends StatelessWidget {
       child: Center(
         child: Text(text, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
       ),
+    );
+  }
+}
+
+// ============ 生涯摘要（V3.3 新增） ============
+
+/// V3.3 生涯摘要：三栏卡片 — 累计阅读（年）/ 累计读完（本）/ 最爱作者（位）
+class _CareerSummary extends StatelessWidget {
+  final List<Book> doneBooks;
+  const _CareerSummary({required this.doneBooks});
+
+  @override
+  Widget build(BuildContext context) {
+    final years = doneBooks
+        .where((b) => b.readDate != null)
+        .map((b) => b.readDate!.year)
+        .toSet()
+        .length;
+    final totalBooks = doneBooks.length;
+    final authorCount = doneBooks
+        .where((b) => b.author != null && b.author!.isNotEmpty)
+        .map((b) => b.author)
+        .toSet()
+        .length;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFDEE2E6)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _buildStat('$years', '累计阅读（年）')),
+          Container(width: 1, height: 32, color: const Color(0xFFDEE2E6)),
+          Expanded(child: _buildStat('$totalBooks', '累计读完（本）')),
+          Container(width: 1, height: 32, color: const Color(0xFFDEE2E6)),
+          Expanded(child: _buildStat('$authorCount', '最爱作者（位）')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStat(String value, String label) {
+    return Column(
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11, color: Color(0xFF868E96))),
+      ],
     );
   }
 }
