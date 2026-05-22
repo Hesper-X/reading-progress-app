@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:app_settings/app_settings.dart';
@@ -80,19 +81,32 @@ class _SettingsPageState extends State<SettingsPage> {
                             : null,
                         iconSize: 36,
                       ),
-                      Container(
-                        width: 80,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$tempGoal',
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: TextEditingController(text: '$tempGoal')
+                            ..selection = TextSelection.collapsed(offset: 0),
                           textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
                           style: const TextStyle(
                               fontSize: 24, fontWeight: FontWeight.w700),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFDEE2E6)),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (v) {
+                            final parsed = int.tryParse(v);
+                            if (parsed != null && parsed >= 1 && parsed <= 500) {
+                              tempGoal = parsed;
+                            }
+                          },
                         ),
                       ),
                       IconButton(
