@@ -50,6 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
     int tempGoal = _goal;
     final result = await showModalBottomSheet<int>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -57,8 +58,14 @@ class _SettingsPageState extends State<SettingsPage> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('年度目标',
@@ -145,6 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ],
               ),
+            ),
             );
           },
         );
