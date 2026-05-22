@@ -89,14 +89,10 @@ class FilterProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// V3.1 新增：切换全部年份 + 标记来自阅读生涯
-  void switchToAllYearsFromLife() {
-    if (_state.isPro) {
-      _state.selectedYear = null;
-      _state.selectedMonth = null;
-      _state.fromReadingLife = true;
-      notifyListeners();
-    }
+  /// V3.3 标记来自阅读生涯（不修改年份/月份筛选）
+  void markFromReadingLife() {
+    _state.fromReadingLife = true;
+    notifyListeners();
   }
 
   /// 更新 Pro 状态

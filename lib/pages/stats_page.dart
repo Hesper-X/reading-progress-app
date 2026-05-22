@@ -166,16 +166,14 @@ class StatsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // ★ V3.3 生涯摘要（三栏）
-                _CareerSummary(doneBooks: doneBooks),
-                const SizedBox(height: 16),
-
                 // ★ V3.3 年度趋势柱状图（移入底部生涯模块；基础版被遮罩覆盖）
                 // 基础版用一个Stack包裹（摘要+年度趋势+按钮），上面覆盖遮罩
                 // 标题留在外面不被遮
                 if (filter.isPro)
                   Column(
                     children: [
+                      _CareerSummary(doneBooks: doneBooks),
+                      const SizedBox(height: 16),
                       _YearlyTrendSection(
                         yearlyTrend: booksProvider.getYearlyTrend(),
                         isPro: true,
@@ -186,7 +184,7 @@ class StatsPage extends StatelessWidget {
                         isPro: true,
                         onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
                         onTap: () {
-                          filterProvider.switchToAllYearsFromLife();
+                          filterProvider.markFromReadingLife();
                           Navigator.pushNamed(context, '/share');
                         },
                       ),
@@ -198,6 +196,8 @@ class StatsPage extends StatelessWidget {
                     children: [
                       Column(
                         children: [
+                          _CareerSummary(doneBooks: doneBooks),
+                          const SizedBox(height: 16),
                           _YearlyTrendSection(
                             yearlyTrend: booksProvider.getYearlyTrend(),
                             isPro: false,
@@ -208,7 +208,7 @@ class StatsPage extends StatelessWidget {
                             isPro: false,
                             onUpgradeTap: () => Navigator.pushNamed(context, '/pro'),
                             onTap: () {
-                              filterProvider.switchToAllYearsFromLife();
+                              filterProvider.markFromReadingLife();
                               Navigator.pushNamed(context, '/share');
                             },
                           ),

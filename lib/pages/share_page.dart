@@ -297,7 +297,7 @@ class _SharePreviewCard extends StatefulWidget {
 
 class _SharePreviewCardState extends State<_SharePreviewCard> {
   bool get _isCurrentYear => (widget.filterState.selectedYear ?? DateTime.now().year) == DateTime.now().year;
-  bool get _showRing => _isCurrentYear && widget.filterState.selectedMonth == null;
+  bool get _showRing => !widget.filterState.fromReadingLife && _isCurrentYear && widget.filterState.selectedMonth == null;
 
   @override
   Widget build(BuildContext context) {
@@ -309,15 +309,34 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
     final booksProvider = context.watch<BooksProvider>();
     final doneBooks = booksProvider.doneBooks;
 
-    // 按筛选范围过滤
-    Iterable<Book> scopeBooks;
-    if (month == null) {
-      scopeBooks = doneBooks.where((b) => b.readDate?.year == year);
+    // 阅读生涯预览：使用全部已读书籍
+    // 否则按年份/月份筛选
+    late List<Book> scopeList;
+    late int readCount;
+    late int totalCount;
+    late double progress;
+    late bool isCelebration;
+
+    if (filter.fromReadingLife) {
+      scopeList = doneBooks;
+      readCount = scopeList.length;
+      totalCount = 0;
+      progress = 0.0;
+      isCelebration = false;
     } else {
-      scopeBooks = doneBooks.where(
-          (b) => b.readDate?.year == year && b.readDate?.month == month);
+      Iterable<Book> scopeBooks;
+      if (month == null) {
+        scopeBooks = doneBooks.where((b) => b.readDate?.year == year);
+      } else {
+        scopeBooks = doneBooks.where(
+            (b) => b.readDate?.year == year && b.readDate?.month == month);
+      }
+      scopeList = scopeBooks.toList();
+      readCount = scopeList.length;
+      totalCount = booksProvider.yearlyGoal;
+      progress = totalCount > 0 ? (readCount / totalCount).clamp(0.0, 1.0) : 0.0;
+      isCelebration = _isCurrentYear && month == null && readCount >= totalCount && totalCount > 0;
     }
-    final scopeList = scopeBooks.toList();
 
     // 计算最爱书籍 Top3
     final favBooks = _computeFavoriteBooks(scopeList);
@@ -329,11 +348,6 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
       ..sort((a, b) => (b.readDate ?? DateTime(2000)).compareTo(a.readDate ?? DateTime(2000)));
     // 最爱作者
     final favAuthors = _computeFavoriteAuthors(scopeList);
-
-    final readCount = scopeList.length;
-    final totalCount = booksProvider.yearlyGoal;
-    final progress = totalCount > 0 ? (readCount / totalCount).clamp(0.0, 1.0) : 0.0;
-    final isCelebration = _isCurrentYear && month == null && readCount >= totalCount && totalCount > 0;
 
     return Container(
       width: double.infinity,
