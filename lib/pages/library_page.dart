@@ -372,6 +372,16 @@ class _DoneTabState extends State<_DoneTab> {
     _availableYears = _deriveYears();
   }
 
+  @override
+  void didUpdateWidget(_DoneTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.books != widget.books) {
+      setState(() {
+        _availableYears = _deriveYears();
+      });
+    }
+  }
+
   List<int> _deriveYears() {
     final currentYear = DateTime.now().year;
     final yearsSet = widget.books

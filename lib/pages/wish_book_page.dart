@@ -119,11 +119,32 @@ class _WishBookPageState extends State<WishBookPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFDEE2E6)),
+              ),
+            ),
+            child: const Text('取消',
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('确认删除', style: TextStyle(color: Color(0xFFFF6B6B))),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B6B),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('确认删除',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
