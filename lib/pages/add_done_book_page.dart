@@ -276,8 +276,18 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFDEE2E6)),
+              ),
+            ),
             child: const Text('取消',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -320,22 +330,32 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFDEE2E6)),
+              ),
+            ),
             child: const Text('留下',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B6B),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('离开',
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600),
-              ),
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B6B),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
               ),
             ),
           ],
@@ -547,82 +567,7 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // ══ 底部区域：保存按钮 ══
-                  GestureDetector(
-                    onTap: _isSaving ? null : _save,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF6B6B),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: _isSaving
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: const Color(0xFFFF6B6B)
-                                      .withValues(alpha: 0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                      ),
-                      child: Center(
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(widget.isEdit ? '💾' : '✅',
-                                      style: const TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                      widget.isEdit ? '保存' : '标记读完',
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white)),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ),
-
-                  // ══ 编辑模式：删除按钮 ══
-                  if (widget.isEdit)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: GestureDetector(
-                        onTap: _delete,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFDEE2E6)),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('🗑️', style: TextStyle(fontSize: 18)),
-                              SizedBox(width: 8),
-                              Text('删除',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF868E96))),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  _buildBottomButtons(),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -784,6 +729,136 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
           ],
         ),
       ],
+    );
+  }
+
+  // ══ 底部按钮：新增模式单按钮，编辑模式双按钮并排 ══
+  Widget _buildBottomButtons() {
+    if (widget.isEdit) {
+      // 编辑模式：💾 保存 + 🗑 删除 并排一行
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            // 保存按钮
+            Expanded(
+              child: GestureDetector(
+                onTap: _isSaving ? null : _save,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: _isSaving
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFFFF6B6B)
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                  ),
+                  child: Center(
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('💾',
+                                  style: TextStyle(fontSize: 18)),
+                              SizedBox(width: 8),
+                              Text('保存',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white)),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 删除按钮
+            Expanded(
+              child: GestureDetector(
+                onTap: _delete,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFC9C9)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🗑️', style: TextStyle(fontSize: 18)),
+                      SizedBox(width: 8),
+                      Text('删除',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF868E96))),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // 新增模式：✅ 标记读完 单按钮
+    return GestureDetector(
+      onTap: _isSaving ? null : _save,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF6B6B),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isSaving
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFFFF6B6B)
+                        .withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Center(
+          child: _isSaving
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('✅',
+                        style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('标记读完',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white)),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 

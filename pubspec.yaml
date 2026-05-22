@@ -1,7 +1,7 @@
 name: reading_progress
 description: 把你读完的书，变成一种生命的进度
 publish_to: 'none'
-version: 3.2.0+7
+version: 3.3.0+9
 
 environment:
   sdk: ^3.11.4
