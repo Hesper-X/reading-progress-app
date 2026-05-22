@@ -66,17 +66,21 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const WishBookPage());
 
       case AppRoutes.addDone:
+        final addDoneArgs = settings.arguments;
+        if (addDoneArgs is Book) {
+          return MaterialPageRoute(
+            builder: (_) => AddDoneBookPage(editBook: addDoneArgs),
+          );
+        }
         return MaterialPageRoute(builder: (_) => const AddDoneBookPage());
 
       case AppRoutes.settings:
         return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 4));
 
       default:
+        // 未知路由 → 回到首页
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('页面不存在')),
-            body: const Center(child: Text('404')),
-          ),
+          builder: (_) => const MainShell(initialIndex: 0),
         );
     }
   }

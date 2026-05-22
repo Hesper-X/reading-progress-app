@@ -537,9 +537,9 @@ class _DoneBookCard extends StatelessWidget {
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
-                    // V3.2 编辑按钮（右上角小胶囊）
+                    // V3.3 编辑按钮 → 路由到 07_3 添加已读书籍（编辑模式）
                     GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.finish, arguments: book),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.addDone, arguments: book),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(

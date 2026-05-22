@@ -11,12 +11,19 @@ import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
 import '../utils/date_utils.dart' as date_utils;
 
-/// 07_3 添加已读书籍（V3.3 已读新增模式）
+/// 07_3 添加已读书籍（V3.3 双模式：新增 + 编辑）
 ///
-/// 入口：书架页已读Tab → 「+ 标记已读」横条
-/// 支持拍照/选封面 → 手动填写信息 → 保存至已读列表
+/// 入口：
+///  - 新增：书架页已读Tab → 「+ 标记已读」横条
+///  - 编辑：已读卡片 → 「编辑」按钮（传入 editBook）
+///
+/// 编辑模式：预填数据、封面可替换、保留原id、支持保存/删除
 class AddDoneBookPage extends StatefulWidget {
-  const AddDoneBookPage({super.key});
+  final Book? editBook;
+
+  const AddDoneBookPage({super.key, this.editBook});
+
+  bool get isEdit => editBook != null;
 
   @override
   State<AddDoneBookPage> createState() => _AddDoneBookPageState();
@@ -35,6 +42,25 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
   int _rating = 0;
   bool _isSaving = false;
   bool _showSuccess = false;
+  Book? _originalBook; // 编辑模式保留原对象
+
+  @override
+  void initState() {
+    super.initState();
+    final editBook = widget.editBook;
+    if (editBook != null) {
+      _originalBook = editBook;
+      _titleController.text = editBook.title;
+      _authorController.text = editBook.author;
+      if (editBook.coverPath != null && editBook.coverPath!.isNotEmpty) {
+        _coverPath = editBook.coverPath;
+        _hasCover = true;
+      }
+      _rating = editBook.rating?.round() ?? 0;
+      if (editBook.readDate != null) _readDate = editBook.readDate!;
+      if (editBook.notes != null) _notesController.text = editBook.notes!;
+    }
+  }
 
   @override
   void dispose() {
@@ -166,9 +192,37 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
     setState(() => _isSaving = true);
 
     final provider = context.read<BooksProvider>();
-    final uuid = const Uuid().v4();
 
-    // 构建新 Book 记录（type=done）
+    if (widget.isEdit && _originalBook != null) {
+      // ══ 编辑模式：UPDATE，保留原id ══
+      try {
+        await provider.updateBook(
+          bookId: _originalBook!.id!,
+          title: title,
+          author: _authorController.text.trim(),
+          coverPath: _coverPath,
+          rating: _rating.toDouble(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          readDate: _readDate,
+        );
+        if (mounted) {
+          setState(() => _isSaving = false);
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('保存失败: $e')),
+          );
+        }
+      }
+      return;
+    }
+
+    // ══ 新增模式：INSERT ══
     final book = Book(
       id: null, // 由 insert 自动分配
       title: title,
@@ -211,9 +265,45 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
     }
   }
 
+  // ============ 删除（编辑模式） ============
+
+  Future<void> _delete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除？'),
+        content: const Text('删除后无法恢复'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除',
+                style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B6B),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && _originalBook?.id != null && mounted) {
+      await context.read<BooksProvider>().deleteBook(_originalBook!.id!);
+      if (mounted) Navigator.pop(context, true);
+    }
+  }
+
   // ============ 返回确认 ============
 
   Future<bool> _onWillPop() async {
+    if (_showSuccess) return true;
     final hasContent = _titleController.text.trim().isNotEmpty ||
         _authorController.text.trim().isNotEmpty ||
         _notesController.text.trim().isNotEmpty ||
@@ -292,8 +382,8 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text('添加已读书籍',
-                        style: TextStyle(
+                    Text(widget.isEdit ? '编辑已读书籍' : '添加已读书籍',
+                        style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary)),
@@ -458,7 +548,7 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // ══ 底部按钮 — 完整宽度单按钮 ══
+                  // ══ 底部区域：保存按钮 ══
                   GestureDetector(
                     onTap: _isSaving ? null : _save,
                     child: Container(
@@ -486,14 +576,15 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('✅',
-                                      style: TextStyle(fontSize: 18)),
-                                  SizedBox(width: 8),
-                                  Text('标记读完',
-                                      style: TextStyle(
+                                  Text(widget.isEdit ? '💾' : '✅',
+                                      style: const TextStyle(fontSize: 18)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                      widget.isEdit ? '保存' : '标记读完',
+                                      style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white)),
@@ -502,12 +593,42 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
                       ),
                     ),
                   ),
+
+                  // ══ 编辑模式：删除按钮 ══
+                  if (widget.isEdit)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: GestureDetector(
+                        onTap: _delete,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDEE2E6)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('🗑️', style: TextStyle(fontSize: 18)),
+                              SizedBox(width: 8),
+                              Text('删除',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF868E96))),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
 
-            // ══ 成功反馈动画 ══
+            // ══ 成功反馈动画（仅新增模式）══
             if (_showSuccess)
               Positioned.fill(
                 child: Container(
