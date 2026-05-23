@@ -523,7 +523,7 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                 if (widget.showLongestShortest && longest != null)
                   _ShareDurSection(longest: longest!, shortest: shortest ?? longest!),
                 if (widget.showReadList && readList.isNotEmpty)
-                  _ShareReadList(books: readList.take(5).toList()),
+                  _ShareReadList(books: readList),
                 if (widget.showFavoriteAuthors && favAuthors.isNotEmpty)
                   _ShareFavAuthors(data: favAuthors),
                   ]),
