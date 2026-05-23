@@ -92,7 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         width: 100,
                         child: TextField(
                           controller: TextEditingController(text: '$tempGoal')
-                            ..selection = TextSelection.collapsed(offset: 0),
+                            ..selection = TextSelection.collapsed(offset: '$tempGoal'.length),
                           textAlign: TextAlign.center,
                           keyboardType: TextInputType.number,
                           style: const TextStyle(

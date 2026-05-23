@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
@@ -230,6 +231,13 @@ class _FinishBookPageState extends State<FinishBookPage> {
     }
   }
 
+  /// 封面缺省时的占位组件
+  Widget _buildCoverPlaceholder() {
+    return const Center(
+      child: Text('📖', style: TextStyle(fontSize: 36)),
+    );
+  }
+
   /// 页面标题
   String get _pageTitle => _isEditing ? '编辑已读' : '标记读完';
 
@@ -287,21 +295,40 @@ class _FinishBookPageState extends State<FinishBookPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 封面占位
+                    // 封面（优先显示真实封面，无封面时显示占位符）
                     Container(
                       width: 80,
                       height: 104,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
-                        ),
+                        gradient: widget.book.coverPath != null && widget.book.coverPath!.isNotEmpty
+                            ? null
+                            : const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFFFE3E3), Color(0xFFFFD3D3)],
+                              ),
                       ),
-                      child: const Center(
-                        child: Text('📖', style: TextStyle(fontSize: 36)),
-                      ),
+                      child: widget.book.coverPath != null && widget.book.coverPath!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: widget.book.coverPath!.startsWith('/')
+                                  ? Image.file(
+                                      File(widget.book.coverPath!),
+                                      width: 80,
+                                      height: 104,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
+                                    )
+                                  : Image.asset(
+                                      widget.book.coverPath!,
+                                      width: 80,
+                                      height: 104,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
+                                    ),
+                            )
+                          : _buildCoverPlaceholder(),
                     ),
                     const SizedBox(width: 16),
                     // 书籍信息

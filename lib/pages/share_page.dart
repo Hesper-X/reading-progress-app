@@ -206,11 +206,25 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 20),
                   // === 统计模块开关 ===
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
-                      '分享页展示控制',
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    child: Text.rich(
+                      TextSpan(
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        children: [
+                          const TextSpan(text: '分享页展示控制'),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Text(
+                                '（分享展示数据同统计页当前筛选一致）',
+                                style: TextStyle(fontSize: 10, color: AppColors.textMuted.withValues(alpha: 0.6)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -411,7 +425,7 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                             children: [
                               Icon(Icons.menu_book, size: 18, color: Colors.white),
                               const SizedBox(width: 6),
-                              Text('${filter.selectedYear ?? DateTime.now().year} 读书进度条',
+                              Text(filter.fromReadingLife ? '我的阅读生涯' : '${filter.selectedYear ?? DateTime.now().year} 读书进度条',
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                               ),
                             ],
@@ -616,7 +630,7 @@ class _ProgressRingRuleTip extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '进度环仅在当年且月份筛选为「全部」时显示。选择往年、其他月度或全部生涯时，进度环自动隐藏。',
+              '进度环仅在统计页为当年且月份筛选为全部时显示。',
               style: const TextStyle(fontSize: 11, color: Color(0xFFE67700), height: 1.5),
             ),
           ),

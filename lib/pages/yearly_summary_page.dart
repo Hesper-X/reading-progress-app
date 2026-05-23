@@ -133,11 +133,11 @@ class _YearlySummaryPageState extends State<YearlySummaryPage> {
                       const SizedBox(height: 24),
 
                       // === Report Header ===
-                      const Center(
+                      Center(
                         child: Column(
                           children: [
                             Text(
-                              '2026',
+                              '$_selectedYear',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xB3FFFFFF),
