@@ -866,10 +866,10 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('📷', style: TextStyle(fontSize: 28)),
-        SizedBox(height: 4),
+        Icon(Icons.camera_alt, size: 28, color: Color(0xFFADB5BD)),
+        SizedBox(height: 6),
         Text('添加封面',
-            style: TextStyle(fontSize: 12, color: Color(0xFF999999))),
+            style: TextStyle(fontSize: 12, color: Color(0xFFADB5BD))),
       ],
     );
   }
