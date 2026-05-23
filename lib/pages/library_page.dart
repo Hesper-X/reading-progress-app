@@ -18,6 +18,7 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _doneCount = 0;
 
   // Tab 索引映射
   static const _tabIndex = {'wish': 0, 'reading': 1, 'done': 2};
@@ -73,7 +74,7 @@ class _LibraryPageState extends State<LibraryPage>
                   tabs: [
                     Tab(text: '想读 ${provider.wishBooks.isNotEmpty ? '(${provider.wishBooks.length})' : ''}'),
                     Tab(text: '在读 ${provider.readingBooks.isNotEmpty ? '(${provider.readingBooks.length})' : ''}'),
-                    Tab(text: '已读 ${provider.doneBooks.isNotEmpty ? '(${provider.doneBooks.length})' : ''}'),
+                    Tab(text: '已读 ${_doneCount > 0 ? '($_doneCount)' : ''}'),
                   ],
                 ),
               ),
@@ -83,7 +84,11 @@ class _LibraryPageState extends State<LibraryPage>
                   children: [
                     _WishTab(books: provider.wishBooks),
                     _ReadingTab(books: provider.readingBooks),
-                    _DoneTab(books: provider.doneBooks),
+                    _DoneTab(books: provider.doneBooks, onCountChanged: (count) {
+                      if (count != _doneCount) {
+                        setState(() => _doneCount = count);
+                      }
+                    }),
                   ],
                 ),
               ),
@@ -352,7 +357,8 @@ class _ReadingBookCard extends StatelessWidget {
 
 class _DoneTab extends StatefulWidget {
   final List<Book> books;
-  const _DoneTab({required this.books});
+  final ValueChanged<int>? onCountChanged;
+  const _DoneTab({required this.books, this.onCountChanged});
 
   @override
   State<_DoneTab> createState() => _DoneTabState();
@@ -370,6 +376,9 @@ class _DoneTabState extends State<_DoneTab> {
   void initState() {
     super.initState();
     _availableYears = _deriveYears();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onCountChanged?.call(_filteredBooks.length);
+    });
   }
 
   @override
@@ -378,6 +387,9 @@ class _DoneTabState extends State<_DoneTab> {
     if (oldWidget.books != widget.books) {
       setState(() {
         _availableYears = _deriveYears();
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onCountChanged?.call(_filteredBooks.length);
       });
     }
   }
@@ -461,13 +473,13 @@ class _DoneTabState extends State<_DoneTab> {
               child: Row(
                 children: [
                   _YearChip(label: '全部', isActive: !_hasFilter,
-                      onTap: () => setState(() => _selectedYear = null)),
+                      onTap: () => setState(() {_selectedYear = null; widget.onCountChanged?.call(_filteredBooks.length);})),
                   const SizedBox(width: 6),
                   ..._availableYears.map((y) => Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: _YearChip(
                         label: '$y', isActive: _selectedYear == y,
-                        onTap: () => setState(() => _selectedYear = _selectedYear == y ? null : y)),
+                        onTap: () => setState(() {_selectedYear = _selectedYear == y ? null : y; widget.onCountChanged?.call(_filteredBooks.length);})),
                   )),
                 ],
               ),
