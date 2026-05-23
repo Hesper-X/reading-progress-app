@@ -299,7 +299,7 @@ class _ReadingBookCard extends StatelessWidget {
                         border: Border.all(color: const Color(0xFFFF6B6B), width: 1),
                         color: Colors.white,
                       ),
-                      child: const Text('标记读完',
+                      child: const Text('标记已读',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFFFF6B6B))),
                     ),
                   ),
