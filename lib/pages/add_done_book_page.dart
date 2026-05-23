@@ -73,61 +73,59 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
 
   // ============ 封面选取 ============
 
-  void _showCoverPicker() {
-    showModalBottomSheet(
+  Future<void> _showCoverPicker() async {
+    final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('选择封面',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF868E96))),
-              const SizedBox(height: 16),
-              _SheetButton(
-                icon: '📷',
-                label: '拍照',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.camera);
-                },
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '选择封面来源',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 4),
-              _SheetButton(
-                icon: '🖼️',
-                label: '从相册选取',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.circular(14),
+                  color: Color(0xFFFFE3E3),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(ctx),
-                  child: const Text('取消',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF212529))),
-                ),
+                child: const Icon(Icons.camera_alt, color: AppColors.primary),
               ),
-            ],
-          ),
+              title: const Text('拍照'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFE3E3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.photo_library, color: AppColors.primary),
+              ),
+              title: const Text('从相册选择'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
         ),
       ),
     );
+    if (source != null) {
+      await _pickImage(source);
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -916,44 +914,6 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
       ),
       contentPadding: const EdgeInsets.all(14),
       counterText: '',
-    );
-  }
-}
-
-/// Action Sheet 选项按钮
-class _SheetButton extends StatelessWidget {
-  final String icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _SheetButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          foregroundColor: const Color(0xFF212529),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-      ),
     );
   }
 }
