@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/filter_provider.dart';
 import '../widgets/app_bottom_nav.dart';
 import 'home_page.dart';
 import 'library_page.dart';
@@ -56,6 +58,10 @@ class _MainShellState extends State<MainShell> {
         bottomNavigationBar: AppBottomNav(
           currentIndex: _currentIndex,
           onTap: (index) {
+            // V3.4: 切换到分享页时重置 fromReadingLife 模式
+            if (index == 3) {
+              context.read<FilterProvider>().setFromReadingLife(false);
+            }
             setState(() => _currentIndex = index);
           },
         ),

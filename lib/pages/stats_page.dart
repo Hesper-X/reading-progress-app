@@ -1211,15 +1211,25 @@ class _YearlyTrendSection extends StatelessWidget {
     final now = DateTime.now();
     final currentYear = now.year;
     final allYears = yearlyTrend.keys.toList();
-    final minDataYear = allYears.isEmpty ? currentYear : allYears.reduce((a, b) => a < b ? a : b);
-    final maxDataYear = allYears.isEmpty ? currentYear : allYears.reduce((a, b) => a > b ? a : b);
 
-    // 从有数据的最早年份开始，到有数据的最新年份+1（右侧留一空位视觉舒适）
+    // 无数据时默认显示最近5年
+    int minDataYear;
+    int maxDataYear;
+    if (allYears.isEmpty) {
+      // 默认显示近5年：当年-4 到 当年
+      minDataYear = currentYear - 4;
+      maxDataYear = currentYear;
+    } else {
+      minDataYear = allYears.reduce((a, b) => a < b ? a : b);
+      maxDataYear = allYears.reduce((a, b) => a > b ? a : b);
+    }
+
+    // 到有数据的最新年份+1（右侧留一空位视觉舒适）
     final endYear = [maxDataYear + 1, currentYear].reduce((a, b) => a > b ? a : b);
 
     // 年份按升序排列：最早数据年 → 最右侧（从左到右）
     final years = <int>[];
-    for (int y = minDataYear; y <= endYear; y++) {
+    for (int y = [minDataYear, currentYear - 4].reduce((a, b) => a < b ? a : b); y <= endYear; y++) {
       years.add(y);
     }
 
