@@ -220,6 +220,20 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
       return;
     }
 
+    // V3.4：免费版容量检查
+    if (!widget.isEdit) {
+      final canAdd = await provider.canAddBook();
+      if (!canAdd) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('基础版最多保存 5 本书，升级 Pro 版无限添加')),
+          );
+        }
+        return;
+      }
+    }
+
     // ══ 新增模式：INSERT ══
     final book = Book(
       id: null, // 由 insert 自动分配

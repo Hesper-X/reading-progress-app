@@ -175,7 +175,7 @@ class _AddBookPageState extends State<AddBookPage> {
       if (!canAdd) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('免费版最多添加 5 本书')),
+            const SnackBar(content: Text('基础版最多保存 5 本书，升级 Pro 版无限添加')),
           );
           Navigator.pushNamed(context, AppRoutes.pro);
         }

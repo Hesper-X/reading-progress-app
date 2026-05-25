@@ -289,10 +289,14 @@ class BooksProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// 检查免费版限制
-  Future<bool> canAddBook() async {
+  /// 免费版最大书籍数
+  static const int freeMaxBooks = 5;
+
+  /// 检查是否可添加新书（V3.4：免费版限制5本）
+  Future<bool> canAddBook({bool isPro = false}) async {
+    if (isPro) return true;
     final count = await _repository.getTotalActiveCount();
-    return count < 999;
+    return count < freeMaxBooks;
   }
 
   Future<int> getReadingBookCount() async {
