@@ -474,19 +474,27 @@ Future<void> _importData() async {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('清空所有数据？'),
-        content: const Text('此操作不可恢复，所有书籍记录和设置将被删除。\nPro 权益可通过恢复购买找回。'),
+        content: const Text('此操作不可恢复，所有书籍记录和设置将被删除。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+            style: TextButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFDEE2E6)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              foregroundColor: const Color(0xFF868E96),
+            ),
+            child: const Text('取消', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             ),
-            child: const Text('继续'),
+            child: const Text('继续', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -506,6 +514,7 @@ Future<void> _importData() async {
               onChanged: (v) => setDialogState(() => inputText = v),
               decoration: InputDecoration(
                 hintText: '确认删除',
+                hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Color(0xFFDEE2E6)),
@@ -515,7 +524,13 @@ Future<void> _importData() async {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('取消'),
+                style: TextButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFDEE2E6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  foregroundColor: const Color(0xFF868E96),
+                ),
+                child: const Text('取消', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -530,8 +545,10 @@ Future<void> _importData() async {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 ),
-                child: const Text('确认'),
+                child: const Text('确认', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
