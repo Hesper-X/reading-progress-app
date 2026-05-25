@@ -231,6 +231,7 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('基础版最多保存 5 本书，升级 Pro 版无限添加')),
           );
+          Navigator.pushNamed(context, AppRoutes.pro);
         }
         return;
       }
