@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:app_settings/app_settings.dart';
 import '../providers/settings_provider.dart';
 import '../providers/books_provider.dart';
@@ -11,13 +14,12 @@ import '../services/reminder_scheduler.dart';
 import '../services/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/purchase_provider.dart';
-import '../providers/books_provider.dart';
 import '../repositories/book_repository.dart';
+import '../repositories/settings_repository.dart';
 import '../databases/database_helper.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
-import '../widgets/celebration_overlay.dart';
 
 /// 设置页 — 按设计稿 05 设置页.html 实现
 class SettingsPage extends StatefulWidget {
@@ -183,10 +185,10 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // ============ 导出数据 ============
+  // ============ V3.4 导出数据 ============
 
-  Future<void> _showExportDialog() async {
-    final result = await showModalBottomSheet<String>(
+  Future<void> _showExportSheet() async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -199,60 +201,83 @@ class _SettingsPageState extends State<SettingsPage> {
             const Text('导出数据',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.code),
-              title: const Text('JSON'),
-              subtitle: const Text('完整数据，可编程读取'),
-              onTap: () => Navigator.pop(ctx, 'json'),
+            const SizedBox(
+              width: double.infinity,
+              child: Text('📄  导出为 JSON 文件',
+                  style: TextStyle(fontSize: 16)),
             ),
-            ListTile(
-              leading: const Icon(Icons.table_chart),
-              title: const Text('CSV'),
-              subtitle: const Text('Excel 可打开'),
-              onTap: () => Navigator.pop(ctx, 'csv'),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('确认'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFDEE2E6)),
+                    foregroundColor: const Color(0xFF868E96),
+                  ),
+                  child: const Text('取消'),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
 
-    if (result != null && mounted) {
-      await _exportData(result);
+    if (result == true && mounted) {
+      await _exportAllData();
     }
   }
 
-  Future<void> _exportData(String format) async {
+  Future<void> _exportAllData() async {
     try {
-      final repo = BookRepository(DatabaseHelper.instance);
-      final books = await repo.getDoneBooks();
+      final db = DatabaseHelper.instance;
+      final repo = BookRepository(db);
+      final settingsRepo = SettingsRepository(db);
 
-      String content;
-      if (format == 'json') {
-        content = '[\n';
-        for (final book in books) {
-          content +=
-              '  {"title":"${book.title}","author":"${book.author ?? ""}",'
-              '"read_date":"${book.formattedReadDate ?? ""}","rating":${book.rating ?? 0}},';
-        }
-        if (books.isNotEmpty) content = content.substring(0, content.length - 1);
-        content += '\n]';
-      } else {
-        content = '书名,作者,读完日期,评分\n';
-        for (final book in books) {
-          content +=
-              '${book.title},${book.author ?? ""},${book.formattedReadDate ?? ""},${book.rating ?? 0}\n';
-        }
-      }
+      // 获取所有书籍（不含已放弃）
+      final allBooks = await repo.getAll();
 
-      final tempDir = Directory.systemTemp.path;
-      final file = File('$tempDir/reading_progress.$format');
-      await file.writeAsString(content);
+      // 获取设置
+      final settings = await settingsRepo.getAll();
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: '读书进度条数据',
-        ),
+      // 构建导出 JSON
+      final exportData = {
+        'app': '读书进度条',
+        'version': AppConstants.appVersion,
+        'exportDate': DateTime.now().toIso8601String(),
+        'books': allBooks.map((b) => {
+          if (b.id != null) 'id': b.id,
+          'type': b.status.value,
+          'title': b.title,
+          'author': b.author,
+          if (b.coverPath != null) 'cover': _encodeCoverBase64(b.coverPath!),
+          if (b.rating != null) 'rating': b.rating!,
+          if (b.notes != null && b.notes!.isNotEmpty) 'review': b.notes!,
+          if (b.readDate != null) 'finishDate': b.readDate!.toIso8601String(),
+          'startDate': b.startDate.toIso8601String(),
+          if (b.readCount > 1) 'readCount': b.readCount,
+        }).toList(),
+        'settings': settings,
+      };
+
+      final jsonStr = const JsonEncoder.withIndent('  ').convert(exportData);
+      final file = File('${Directory.systemTemp.path}/reading_progress_export.json');
+      await file.writeAsString(jsonStr);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: '读书进度条数据导出',
       );
 
       if (mounted) {
@@ -263,12 +288,306 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('导出失败，请重试')),
+          SnackBar(content: Text('导出失败：$e')),
         );
       }
     }
   }
 
+  /// 将封面图片编码为 base64
+  String _encodeCoverBase64(String coverPath) {
+    try {
+      final file = File(coverPath);
+      if (!file.existsSync()) return '';
+      final bytes = file.readAsBytesSync();
+      return base64Encode(bytes);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // ============ V3.4 导入数据 ============
+
+Future<void> _importData() async {
+  try {
+    const typeGroup = XTypeGroup(
+      label: 'JSON',
+      extensions: ['json'],
+    );
+    final result = await openFile(
+      acceptedTypeGroups: [typeGroup],
+    );
+
+    if (result == null) return;
+
+    final file = File(result.path);
+    if (!await file.exists()) return;
+      if (!await file.exists()) return;
+
+      final content = await file.readAsString();
+      final Map<String, dynamic> data;
+      try {
+        data = jsonDecode(content) as Map<String, dynamic>;
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('文件格式不正确，请选择本 App 导出的 JSON 文件')),
+          );
+        }
+        return;
+      }
+
+      // 校验格式
+      if (data['app'] != '读书进度条' ||
+          data['version'] == null ||
+          data['books'] == null ||
+          data['books'] is! List) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('文件格式不正确，请选择本 App 导出的 JSON 文件')),
+          );
+        }
+        return;
+      }
+
+      final booksList = data['books'] as List;
+      if (booksList.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('文件中没有找到书籍记录')),
+          );
+        }
+        return;
+      }
+
+      // 弹窗确认
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('导入数据'),
+          content: Text('将导入 ${booksList.length} 本书籍记录，继续吗？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('确认导入'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+
+      // 逐条导入（事务保护）
+      final db = DatabaseHelper.instance;
+      final database = await db.database;
+      final booksProvider = context.read<BooksProvider>();
+
+      // 先获取本地所有已有书籍 ID
+      final localBooks = await database.query('books',
+          columns: ['id'], where: "status != 'abandoned'");
+      final localIds = localBooks.map((m) => m['id'] as int).toSet();
+
+      int imported = 0;
+      int skipped = 0;
+
+      await database.transaction((txn) async {
+        for (final item in booksList) {
+          final itemMap = item as Map<String, dynamic>;
+          final title = itemMap['title'] as String? ?? '';
+
+          // 检查 ID 冲突
+          final itemId = itemMap['id'] as int?;
+          if (itemId != null && localIds.contains(itemId)) {
+            skipped++;
+            continue;
+          }
+
+          // 解码 base64 封面
+          String? savedCoverPath;
+          final base64Cover = itemMap['cover'] as String?;
+          if (base64Cover != null && base64Cover.isNotEmpty) {
+            try {
+              final bytes = base64Decode(base64Cover);
+              final appDir = await getApplicationDocumentsDirectory();
+              final coversDir = Directory('${appDir.path}/covers');
+              if (!await coversDir.exists()) {
+                await coversDir.create(recursive: true);
+              }
+              final destPath = '${coversDir.path}/import_${DateTime.now().millisecondsSinceEpoch}_${imported}.jpg';
+              await File(destPath).writeAsBytes(bytes);
+              savedCoverPath = destPath;
+            } catch (_) {}
+          }
+
+          final type = itemMap['type'] as String? ?? 'done';
+          final startDateStr = itemMap['startDate'] as String?;
+          final finishDateStr = itemMap['finishDate'] as String?;
+          final rating = itemMap['rating'] as num?;
+
+          await txn.insert('books', {
+            'title': title,
+            'author': itemMap['author'] as String? ?? '',
+            if (savedCoverPath != null) 'cover_path': savedCoverPath,
+            if (rating != null) 'rating': (rating * 10).round(),
+            if (itemMap['review'] != null) 'notes': itemMap['review'] as String,
+            if (finishDateStr != null) 'read_date': finishDateStr,
+            'start_date': startDateStr ?? DateTime.now().toIso8601String(),
+            'status': type,
+            'read_count': (itemMap['readCount'] as int?) ?? 1,
+            'created_at': DateTime.now().toIso8601String(),
+          });
+          imported++;
+        }
+      });
+
+      // 刷新数据
+      await booksProvider.loadBooks();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导入成功！已恢复 $imported 本书籍记录${skipped > 0 ? '，跳过 $skipped 条重复记录' : ''}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导入失败：$e')),
+        );
+      }
+    }
+  }
+
+  // ============ V3.4 清空数据 ============
+
+  Future<void> _showClearDataDialog() async {
+    // 第一次确认
+    final firstConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清空所有数据？'),
+        content: const Text('此操作不可恢复，所有书籍记录和设置将被删除。\nPro 权益可通过恢复购买找回。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('继续'),
+          ),
+        ],
+      ),
+    );
+
+    if (firstConfirmed != true || !mounted) return;
+
+    // 第二次确认：输入文本
+    final secondConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        String inputText = '';
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('输入「确认删除」继续'),
+            content: TextField(
+              onChanged: (v) => setDialogState(() => inputText = v),
+              decoration: InputDecoration(
+                hintText: '确认删除',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFDEE2E6)),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (inputText == '确认删除') {
+                    Navigator.pop(ctx, true);
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('请输入准确文字')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('确认'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (secondConfirmed != true || !mounted) return;
+
+    // 执行清空
+    await _executeClearData();
+  }
+
+  Future<void> _executeClearData() async {
+    try {
+      final db = DatabaseHelper.instance;
+      final database = await db.database;
+
+      // 清空 books 表
+      await database.delete('books');
+      // 重置设置
+      await database.delete('settings', where: "key NOT IN ('pro_purchased')");
+
+      // 重新插入默认设置
+      await database.insert('settings', {'key': 'yearly_goal', 'value': '52'});
+      await database.insert('settings', {'key': 'theme', 'value': 'light'});
+      await database.insert('settings', {'key': 'daily_reminder', 'value': 'false'});
+      await database.insert('settings', {'key': 'reminder_time', 'value': '21:00'});
+      await database.insert('settings', {'key': 'backup_enabled', 'value': 'false'});
+
+      // 刷新 Provider 数据
+      final booksProvider = context.read<BooksProvider>();
+      final settingsProvider = context.read<SettingsProvider>();
+      await booksProvider.loadBooks();
+      await settingsProvider.loadSettings();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('数据已清空')),
+        );
+
+        // 重启首页
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('清空失败：$e')),
+        );
+      }
+    }
+  }
   // ============ 提醒时间弹窗 ============
 
   Future<void> _showReminderDialog() async {
@@ -473,30 +792,26 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
 
-          // === 数据管理 ===
+          // === 数据管理（V3.4 重构：导出/导入/清空） ===
           _Section(header: '数据管理', items: [
             _SettingCardData(
               icon: '📥',
-              title: '导出数据 (JSON)',
-              subtitle: '导出所有读书记录',
-              onTap: () => _showExportDialog(),
+              title: '导出数据',
+              subtitle: '导出为 JSON 文件',
+              onTap: _showExportSheet,
             ),
             _SettingCardData(
-              icon: '📥',
-              title: '导出数据 (CSV)',
-              subtitle: 'Excel 可读格式',
-              onTap: () => _showExportDialog(),
+              icon: '📤',
+              title: '导入数据',
+              subtitle: '从 JSON 文件恢复数据',
+              onTap: _importData,
             ),
             _SettingCardData(
-              icon: '💾',
-              title: '备份到本地',
-              subtitle: '完整备份应用数据',
+              icon: '⚠️',
+              title: '清空数据',
+              subtitle: '清除所有书籍记录和设置',
               showBorder: false,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('备份功能即将推出')),
-                );
-              },
+              onTap: _showClearDataDialog,
             ),
           ]),
 

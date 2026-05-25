@@ -1,7 +1,9 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
+import '../providers/purchase_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 import '../widgets/book_cover.dart';
@@ -35,6 +37,13 @@ class _LibraryPageState extends State<LibraryPage>
     });
   }
 
+  /// V3.4: 计算总书籍数（想读+在读+已读）
+  int _totalBookCount(BooksProvider provider) {
+    return provider.wishBooks.length +
+        provider.readingBooks.length +
+        _doneCount;
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -59,22 +68,30 @@ class _LibraryPageState extends State<LibraryPage>
         builder: (context, provider, _) {
           return Column(
             children: [
-              // Tab 栏（三Tab）
+              // Tab 栏（三Tab + V3.4 容量角标）
               Container(
                 decoration: const BoxDecoration(
                   border: Border(bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1)),
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.tabInactive,
-                  indicatorColor: AppColors.primary,
-                  indicatorWeight: 3,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  tabs: [
-                    Tab(text: '想读 ${provider.wishBooks.isNotEmpty ? '(${provider.wishBooks.length})' : ''}'),
-                    Tab(text: '在读 ${provider.readingBooks.isNotEmpty ? '(${provider.readingBooks.length})' : ''}'),
-                    Tab(text: '已读 ${_doneCount > 0 ? '($_doneCount)' : ''}'),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TabBar(
+                        controller: _tabController,
+                        labelColor: AppColors.primary,
+                        unselectedLabelColor: AppColors.tabInactive,
+                        indicatorColor: AppColors.primary,
+                        indicatorWeight: 3,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        tabs: [
+                          Tab(text: '想读 ${provider.wishBooks.isNotEmpty ? '(${provider.wishBooks.length})' : ''}'),
+                          Tab(text: '在读 ${provider.readingBooks.isNotEmpty ? '(${provider.readingBooks.length})' : ''}'),
+                          Tab(text: '已读 ${_doneCount > 0 ? '($_doneCount)' : ''}'),
+                        ],
+                      ),
+                    ),
+                    // V3.4: 容量角标
+                    _CapacityBadge(totalBooks: _totalBookCount(provider)),
                   ],
                 ),
               ),
@@ -725,6 +742,122 @@ class _SortButton extends StatelessWidget {
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400))),
       ),
     );
+  }
+}
+
+// ============ V3.4 容量角标组件 ============
+
+/// 书架页容量角标：显示当前书籍数/5，点击弹出升级引导
+class _CapacityBadge extends StatelessWidget {
+  final int totalBooks;
+  const _CapacityBadge({required this.totalBooks});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPro = context.watch<PurchaseProvider>().isPro;
+    // Pro 用户不渲染
+    if (isPro) return const SizedBox.shrink();
+
+    final isFull = totalBooks >= 5;
+    final displayCount = totalBooks > 5 ? 5 : totalBooks;
+
+    return GestureDetector(
+      onTap: () => _showCapacityToast(context),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isFull ? const Color(0xFFFFF0F0) : const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$displayCount/5',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isFull ? FontWeight.w600 : FontWeight.w500,
+              color: isFull ? const Color(0xFFE34D59) : const Color(0xFF868E96),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCapacityToast(BuildContext context) {
+    OverlayEntry? overlayEntry;
+    Timer? autoDismissTimer;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        onTap: () {
+          overlayEntry?.remove();
+          autoDismissTimer?.cancel();
+        },
+        child: Stack(
+          children: [
+            // 透明遮罩，点击外部关闭
+            Container(color: Colors.transparent),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.of(context).padding.bottom + 100,
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF212529),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '基础版最多保存 5 本书，升级 Pro 版无限添加',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () {
+                            overlayEntry?.remove();
+                            autoDismissTimer?.cancel();
+                            Navigator.pushNamed(context, AppRoutes.pro);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              '去升级 Pro',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+    autoDismissTimer = Timer(const Duration(seconds: 3), () {
+      overlayEntry?.remove();
+    });
   }
 }
 
