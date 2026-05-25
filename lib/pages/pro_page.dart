@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/purchase_provider.dart';
+import '../providers/filter_provider.dart';
 
 /// Pro 升级页 — 按设计稿 08Pro 升级页.html 1:1 实现
 class ProPage extends StatefulWidget {
@@ -33,6 +34,10 @@ class _ProPageState extends State<ProPage> {
     setState(() => _buyLoading = true);
     try {
       await purchase.setPro(true);
+      // 同步更新 FilterProvider 的 Pro 状态（统计页使用）
+      if (mounted) {
+        context.read<FilterProvider>().updateProStatus(true);
+      }
       if (mounted) {
         setState(() => _buyLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,6 +63,10 @@ class _ProPageState extends State<ProPage> {
     try {
       final purchase = context.read<PurchaseProvider>();
       await purchase.setPro(true);
+      // 同步更新 FilterProvider 的 Pro 状态（统计页使用）
+      if (mounted) {
+        context.read<FilterProvider>().updateProStatus(true);
+      }
       if (mounted) {
         setState(() => _restoreLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
