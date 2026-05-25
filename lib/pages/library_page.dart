@@ -766,7 +766,7 @@ class _CapacityBadge extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(right: 12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: isFull ? const Color(0xFFFFF0F0) : const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(10),
@@ -775,7 +775,7 @@ class _CapacityBadge extends StatelessWidget {
             '$displayCount/5',
             style: TextStyle(
               fontSize: 11,
-              fontWeight: isFull ? FontWeight.w600 : FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: isFull ? const Color(0xFFE34D59) : const Color(0xFF868E96),
             ),
           ),
