@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
+import '../providers/purchase_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../utils/date_utils.dart' as date_utils;
@@ -171,7 +172,8 @@ class _AddBookPageState extends State<AddBookPage> {
       }
     } else {
       // 新建模式：检查免费版限制
-      final canAdd = await provider.canAddBook();
+      final isPro = context.read<PurchaseProvider>().isPro;
+      final canAdd = await provider.canAddBook(isPro: isPro);
       if (!canAdd) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

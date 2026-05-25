@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/books_provider.dart';
+import '../providers/purchase_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../models/book.dart';
@@ -71,7 +72,8 @@ class _WishBookPageState extends State<WishBookPage> {
       }
     } else {
       // 新建模式：检查免费版限制
-      final canAdd = await provider.canAddBook();
+      final isPro = context.read<PurchaseProvider>().isPro;
+      final canAdd = await provider.canAddBook(isPro: isPro);
       if (!canAdd) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

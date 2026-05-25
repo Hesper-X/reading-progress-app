@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
+import '../providers/purchase_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
@@ -222,7 +223,8 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
 
     // V3.4：免费版容量检查
     if (!widget.isEdit) {
-      final canAdd = await provider.canAddBook();
+      final isPro = context.read<PurchaseProvider>().isPro;
+      final canAdd = await provider.canAddBook(isPro: isPro);
       if (!canAdd) {
         if (mounted) {
           setState(() => _isSaving = false);
