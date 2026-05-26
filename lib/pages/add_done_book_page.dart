@@ -264,10 +264,23 @@ class _AddDoneBookPageState extends State<AddDoneBookPage> {
           _showSuccess = true;
         });
 
-        // 2 秒后自动返回书架
+        // 2 秒后检查庆祝条件并导航
         Future.delayed(const Duration(seconds: 2), () {
           if (!mounted) return;
-          Navigator.pop(context, true);
+
+          final provider = context.read<BooksProvider>();
+          final isGoalMet = provider.currentYearCount >= provider.yearlyGoal &&
+              provider.yearlyGoal > 0;
+
+          if (isGoalMet && !provider.celebrationTriggered) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.home,
+              (route) => false,
+            );
+          } else {
+            Navigator.pop(context, true);
+          }
         });
       }
     } catch (e) {
