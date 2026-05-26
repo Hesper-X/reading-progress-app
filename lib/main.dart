@@ -16,22 +16,42 @@ import 'theme/app_theme.dart';
 import 'routes/route_generator.dart';
 import 'routes/app_routes.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化数据库
+  // 同步初始化：仅创建单例引用的同步构造，不触发 async 操作
   final dbHelper = DatabaseHelper.instance;
-
-  // 初始化仓库
   final bookRepository = BookRepository(dbHelper);
   final settingsRepository = SettingsRepository(dbHelper);
   final goalRepository = GoalRepository(dbHelper);
 
-  // 初始化通知服务
-  await NotificationService().init();
+  // [关键] 通知服务等耗时初始化全部后置到首帧之后
+  // 确保 Flutter 引擎启动后立即渲染 SplashPage，消除启动白屏
 
   runApp(
-    MultiProvider(
+    _DelayedInitApp(
+      bookRepository: bookRepository,
+      settingsRepository: settingsRepository,
+      goalRepository: goalRepository,
+    ),
+  );
+}
+
+/// 包装层：先快速渲染 SplashPage，再在首帧后进行异步初始化
+class _DelayedInitApp extends StatelessWidget {
+  final BookRepository bookRepository;
+  final SettingsRepository settingsRepository;
+  final GoalRepository goalRepository;
+
+  const _DelayedInitApp({
+    required this.bookRepository,
+    required this.settingsRepository,
+    required this.goalRepository,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => BooksProvider(
@@ -61,39 +81,61 @@ void main() async {
           ),
         ),
       ],
-      child: const ReadingProgressApp(),
-    ),
-  );
+      child: _DelayedInitWrapper(
+        bookRepository: bookRepository,
+        settingsRepository: settingsRepository,
+      ),
+    );
+  }
 }
 
-class ReadingProgressApp extends StatefulWidget {
-  const ReadingProgressApp({super.key});
+/// 首帧渲染后执行异步初始化
+class _DelayedInitWrapper extends StatefulWidget {
+  final BookRepository bookRepository;
+  final SettingsRepository settingsRepository;
+
+  const _DelayedInitWrapper({
+    required this.bookRepository,
+    required this.settingsRepository,
+  });
 
   @override
-  State<ReadingProgressApp> createState() => _ReadingProgressAppState();
+  State<_DelayedInitWrapper> createState() => _DelayedInitWrapperState();
 }
 
-class _ReadingProgressAppState extends State<ReadingProgressApp> {
+class _DelayedInitWrapperState extends State<_DelayedInitWrapper> {
   @override
   void initState() {
     super.initState();
-    // 加载初始数据
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BooksProvider>().loadBooks();
-      context.read<FilterProvider>().loadInitial();
-      context.read<SettingsProvider>().loadSettings();
-      context.read<PurchaseProvider>().loadPurchaseStatus();
-      context.read<ThemeProvider>().loadTheme();
 
-      // 恢复每日提醒调度
-      Future.microtask(() async {
-        final booksProvider = context.read<BooksProvider>();
-        final settingsProvider = context.read<SettingsProvider>();
-        await ReminderScheduler().restoreAfterStartup(
-          booksProvider: booksProvider,
-          settingsProvider: settingsProvider,
-        );
-      });
+    // 首帧渲染后再用微任务做耗时初始化，彻底不干扰首帧渲染和动画
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(_initAfterFirstFrame);
+    });
+  }
+
+  Future<void> _initAfterFirstFrame() async {
+    // 初始化通知服务
+    await NotificationService().init();
+
+    if (!mounted) return;
+
+    // 加载数据
+    context.read<BooksProvider>().loadBooks();
+    context.read<FilterProvider>().loadInitial();
+    context.read<SettingsProvider>().loadSettings();
+    context.read<PurchaseProvider>().loadPurchaseStatus();
+    context.read<ThemeProvider>().loadTheme();
+
+    // 恢复每日提醒调度
+    Future.microtask(() async {
+      if (!mounted) return;
+      final booksProvider = context.read<BooksProvider>();
+      final settingsProvider = context.read<SettingsProvider>();
+      await ReminderScheduler().restoreAfterStartup(
+        booksProvider: booksProvider,
+        settingsProvider: settingsProvider,
+      );
     });
   }
 
