@@ -15,49 +15,51 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
-      height: AppSpacing.bottomNavBarHeight,
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
           top: BorderSide(color: AppColors.border, width: 1),
         ),
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            _NavItem(
-              icon: _HomeIcon(),
-              label: '首页',
-              isSelected: currentIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            _NavItem(
-              icon: _LibraryIcon(),
-              label: '书架',
-              isSelected: currentIndex == 1,
-              onTap: () => onTap(1),
-            ),
-            _NavItem(
-              icon: _StatsIcon(),
-              label: '统计',
-              isSelected: currentIndex == 2,
-              onTap: () => onTap(2),
-            ),
-            _NavItem(
-              icon: _ShareIcon(),
-              label: '分享',
-              isSelected: currentIndex == 3,
-              onTap: () => onTap(3),
-            ),
-            _NavItem(
-              icon: _SettingsIcon(),
-              label: '设置',
-              isSelected: currentIndex == 4,
-              onTap: () => onTap(4),
-            ),
-          ],
-        ),
+      padding: EdgeInsets.only(
+        top: 8,
+        bottom: 8 + bottomPadding,
+      ),
+      child: Row(
+        children: [
+          _NavItem(
+            icon: _HomeIcon(),
+            label: '首页',
+            isSelected: currentIndex == 0,
+            onTap: () => onTap(0),
+          ),
+          _NavItem(
+            icon: _LibraryIcon(),
+            label: '书架',
+            isSelected: currentIndex == 1,
+            onTap: () => onTap(1),
+          ),
+          _NavItem(
+            icon: _StatsIcon(),
+            label: '统计',
+            isSelected: currentIndex == 2,
+            onTap: () => onTap(2),
+          ),
+          _NavItem(
+            icon: _ShareIcon(),
+            label: '分享',
+            isSelected: currentIndex == 3,
+            onTap: () => onTap(3),
+          ),
+          _NavItem(
+            icon: _SettingsIcon(),
+            label: '设置',
+            isSelected: currentIndex == 4,
+            onTap: () => onTap(4),
+          ),
+        ],
       ),
     );
   }

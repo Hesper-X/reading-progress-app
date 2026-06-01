@@ -12,8 +12,9 @@ import 'settings_page.dart';
 /// 主页框架页（承载底部 5 Tab 导航）
 class MainShell extends StatefulWidget {
   final int initialIndex;
+  final String? initialLibraryTab;
 
-  const MainShell({super.key, this.initialIndex = 0});
+  const MainShell({super.key, this.initialIndex = 0, this.initialLibraryTab});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -22,12 +23,12 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   late int _currentIndex;
 
-  final List<Widget> _pages = const [
-    _HomePagePlaceholder(),
-    _LibraryPagePlaceholder(),
-    _StatsPagePlaceholder(),
-    _SharePagePlaceholder(),
-    _SettingsPagePlaceholder(),
+  late final List<Widget> _pages = [
+    const _HomePagePlaceholder(),
+    _LibraryPagePlaceholder(initialTab: widget.initialLibraryTab),
+    const _StatsPagePlaceholder(),
+    const _SharePagePlaceholder(),
+    const _SettingsPagePlaceholder(),
   ];
 
   @override
@@ -80,11 +81,12 @@ class _HomePagePlaceholder extends StatelessWidget {
 }
 
 class _LibraryPagePlaceholder extends StatelessWidget {
-  const _LibraryPagePlaceholder();
+  final String? initialTab;
+  const _LibraryPagePlaceholder({this.initialTab});
 
   @override
   Widget build(BuildContext context) {
-    return LibraryPage();
+    return LibraryPage(initialTab: initialTab);
   }
 }
 

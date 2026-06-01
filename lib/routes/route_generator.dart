@@ -20,7 +20,14 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0));
 
       case AppRoutes.library:
-        return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 1));
+        String? initialLibraryTab;
+        final args = settings.arguments;
+        if (args is Map<String, dynamic> && args['tab'] is String) {
+          initialLibraryTab = args['tab'] as String;
+        }
+        return MaterialPageRoute(
+          builder: (_) => MainShell(initialIndex: 1, initialLibraryTab: initialLibraryTab),
+        );
 
       case AppRoutes.add:
         final args = settings.arguments;
