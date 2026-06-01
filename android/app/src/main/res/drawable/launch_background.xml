@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launch background matching splash page gradient (#FF6B6B → #FFA8A8) -->
+<!-- Launch background: static splash page image (replaces Flutter SplashPage) -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#FFFF6B6B"
-                android:endColor="#FFFFA8A8"
-                android:angle="135" />
-        </shape>
+        <bitmap android:src="@drawable/splash_screen" android:gravity="fill" />
     </item>
 </layer-list>

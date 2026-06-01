@@ -159,7 +159,7 @@ class _DelayedInitWrapperState extends State<_DelayedInitWrapper> {
             Locale('en', 'US'),
           ],
           locale: const Locale('zh', 'CN'),
-          initialRoute: AppRoutes.splash,
+          initialRoute: AppRoutes.home,
           onGenerateRoute: RouteGenerator.generateRoute,
         );
       },
