@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/books_provider.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
 
@@ -17,14 +19,22 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 3000), _navigateToHome);
+    // 最短展示 2 秒（品牌露出），之后等数据加载完再跳转
+    Future.delayed(const Duration(milliseconds: 2000), _tryNavigate);
   }
 
-  void _navigateToHome() {
-    if (_navigated) return;
-    _navigated = true;
-    if (mounted && context.mounted) {
+  void _tryNavigate() {
+    if (_navigated || !mounted) return;
+    if (!context.mounted) return;
+    final provider = context.read<BooksProvider>();
+    if (!provider.isLoading) {
+      debugPrint('⏱️ [Splash] 数据已加载，跳转首页');
+      _navigated = true;
       Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    } else {
+      // 数据还在加载，等 100ms 后再试
+      debugPrint('⏱️ [Splash] 数据加载中，等待...');
+      Future.delayed(const Duration(milliseconds: 100), _tryNavigate);
     }
   }
 
