@@ -722,32 +722,49 @@ Future<void> _importData() async {
     }
   }
 
-  /// 检测精确闹钟权限，未开启时弹系统原生请求并重新调度
-  Future<void> _requestExactAlarmPermissionIfNeeded() async {
+  /// 检测精确闹钟权限，未开启时弹系统原生请求
+  /// 返回 true 表示已拥有精确闹钟权限；false 表示用户未授予
+  Future<bool> _requestExactAlarmPermissionIfNeeded() async {
     try {
       final androidPlugin = NotificationService().platform
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
-      if (androidPlugin == null) return;
+      if (androidPlugin == null) return false;
 
       final canSchedule = await androidPlugin.canScheduleExactNotifications();
-      if (canSchedule == false) {
+      if (canSchedule != true) {
         // 弹出系统原生精确闹钟权限请求
         await androidPlugin.requestExactAlarmsPermission();
 
-        // 重新检测（用户刚点了 Allow）
+        // 重新检测（用户刚点了 Allow/Deny）
         final retry = await androidPlugin.canScheduleExactNotifications();
-        if (retry == true) {
-          // 权限已获取，重新调度（使启用 exact 模式）
-          await ReminderScheduler().updateSchedule(
-            booksProvider: context.read<BooksProvider>(),
-            settingsProvider: context.read<SettingsProvider>(),
-          );
-        }
+        return retry == true;
       }
+      return true; // 已有权限
     } catch (_) {
-      // 低版本 Android 或异常情况，静默忽略
+      // 低版本 Android 或异常情况，返回 false
+      return false;
     }
+  }
+
+  /// 显示权限被拒提示
+  void _showPermissionDeniedSnackbar(String permissionName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$permissionName权限被拒绝，提醒功能无法正常工作。请在系统设置中手动开启该权限。'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '去设置',
+          onPressed: () {
+            try {
+              AppSettings.openAppSettings(type: AppSettingsType.notification);
+            } catch (_) {
+              // 无法跳转时忽略
+            }
+          },
+        ),
+      ),
+    );
   }
 
   // ============ 关于页 ============
@@ -843,11 +860,22 @@ Future<void> _importData() async {
               onSwitchChanged: (v) async {
                 if (v) {
                   // 开启提醒前先申请通知权限（Android 13+）
-                  await NotificationService().requestPermissions();
+                  final notifGranted = await NotificationService().requestPermissions();
 
-                  // Android 13+：检测并引导精确闹钟权限
+                  // 如果用户拒绝了通知权限，不打开开关
+                  if (notifGranted != true) {
+                    _showPermissionDeniedSnackbar('通知');
+                    setState(() => _reminderEnabled = false);
+                    return;
+                  }
+
+                  // Android 12+：检测并引导精确闹钟权限
                   if (mounted) {
-                    await _requestExactAlarmPermissionIfNeeded();
+                    final alarmGranted = await _requestExactAlarmPermissionIfNeeded();
+                    if (!alarmGranted) {
+                      // 精确闹钟权限被拒，提醒可关闭通知但闹钟可能不准时
+                      // 仍允许用户继续使用，因为通知仍然能发
+                    }
                   }
                 }
                 await context.read<SettingsProvider>().setDailyReminder(v);
