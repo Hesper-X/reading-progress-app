@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import '../pages/splash_page.dart';
 import '../pages/add_book_page.dart';
 import '../pages/finish_book_page.dart';
 import '../pages/main_shell.dart';
@@ -12,6 +13,9 @@ import 'app_routes.dart';
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case AppRoutes.splash:
+        return MaterialPageRoute(builder: (_) => const SplashPage());
+
       case AppRoutes.home:
         return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0));
 
