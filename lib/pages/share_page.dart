@@ -448,14 +448,19 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   SizedBox(
                     width: 120,
                     height: 120,
-                    child: CustomPaint(
-                      painter: _ShareRingPainter(progress: progress),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CustomPaint(
+                          painter: _ShareRingPainter(progress: progress),
+                          size: const Size(120, 120),
+                        ),
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '${(progress * 100).toInt()}%',
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Column(
