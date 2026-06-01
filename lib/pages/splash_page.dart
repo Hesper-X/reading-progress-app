@@ -17,7 +17,6 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    // 固定 3 秒后跳转首页（覆盖 Flutter 引擎初始化 + 首页首帧渲染）
     Future.delayed(const Duration(milliseconds: 3000), _navigateToHome);
   }
 
