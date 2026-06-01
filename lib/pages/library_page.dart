@@ -321,7 +321,7 @@ class _ReadingBookCard extends StatelessWidget {
                         border: Border.all(color: const Color(0xFFFF6B6B), width: 1),
                         color: Colors.white,
                       ),
-                      child: const Text('已读书籍',
+                      child: const Text('标记已读',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFFFF6B6B))),
                     ),
                   ),
@@ -531,7 +531,7 @@ class _DoneTabState extends State<_DoneTab> {
       // 列表
       Expanded(
         child: filtered.isEmpty
-            ? _emptyState(context, _hasFilter ? '没有找到匹配的书籍' : '还没有读完的书籍', '在[在读]清单或者[已读]页，点击[已读书籍]，\n它们会出现在这里')
+            ? _emptyState(context, _hasFilter ? '没有找到匹配的书籍' : '还没有读完的书籍', '在[在读]清单或者[已读]页，点击[标记已读]，\n它们会出现在这里')
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: filtered.length,
