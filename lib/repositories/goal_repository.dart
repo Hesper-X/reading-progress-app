@@ -21,7 +21,7 @@ class GoalRepository {
   }
 
   /// 获取或创建默认目标
-  Future<YearGoal> getOrCreateGoal(int year, {int defaultTarget = 52}) async {
+  Future<YearGoal> getOrCreateGoal(int year, {int defaultTarget = 0}) async {
     final existing = await getGoal(year);
     if (existing != null) return existing;
 

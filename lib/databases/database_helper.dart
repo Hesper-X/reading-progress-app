@@ -53,7 +53,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE year_goals (
         year INTEGER PRIMARY KEY,
-        target INTEGER NOT NULL DEFAULT 52,
+        target INTEGER NOT NULL DEFAULT 0,
         is_set_by_user INTEGER NOT NULL DEFAULT 0
       )
     ''');
@@ -74,7 +74,7 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_author ON books(author)');
 
     // 默认设置
-    await db.execute("INSERT OR IGNORE INTO settings VALUES ('yearly_goal', '52')");
+    await db.execute("INSERT OR IGNORE INTO settings VALUES ('yearly_goal', '0')");
     await db.execute("INSERT OR IGNORE INTO settings VALUES ('theme', 'light')");
     await db.execute("INSERT OR IGNORE INTO settings VALUES ('daily_reminder', 'false')");
     await db.execute("INSERT OR IGNORE INTO settings VALUES ('reminder_time', '21:00')");
@@ -84,7 +84,7 @@ class DatabaseHelper {
     // 初始化当年年度目标
     final year = DateTime.now().year;
     await db.execute(
-        "INSERT OR IGNORE INTO year_goals (year, target, is_set_by_user) VALUES ($year, 52, 0)");
+        "INSERT OR IGNORE INTO year_goals (year, target, is_set_by_user) VALUES ($year, 0, 0)");
   }
 
   /// 数据库迁移
@@ -168,7 +168,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS year_goals (
         year INTEGER PRIMARY KEY,
-        target INTEGER NOT NULL DEFAULT 52,
+        target INTEGER NOT NULL DEFAULT 0,
         is_set_by_user INTEGER NOT NULL DEFAULT 0
       )
     ''');
@@ -178,12 +178,13 @@ class DatabaseHelper {
     await db.execute('''
       INSERT OR IGNORE INTO year_goals (year, target, is_set_by_user)
       VALUES ($year, 
-        COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'yearly_goal'), 52),
+        COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'yearly_goal'), 0),
         0)
     ''');
 
-    // Step 8: 更新默认目标为52（V3.0 新默认值）
-    await db.execute("UPDATE settings SET value = '52' WHERE key = 'yearly_goal' AND value = '50'");
+    // Step 8: 清除旧的默认值迁移（V3.4: 默认目标改为0）
+    await db.execute("UPDATE settings SET value = '0' WHERE key = 'yearly_goal' AND value = '50'");
+    await db.execute("UPDATE settings SET value = '0' WHERE key = 'yearly_goal' AND value = '52'");
   }
 
   /// 关闭数据库

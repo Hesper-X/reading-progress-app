@@ -6,14 +6,14 @@ class YearGoal {
 
   YearGoal({
     required this.year,
-    this.target = 52,
+    this.target = 0,
     this.isSetByUser = false,
   });
 
   factory YearGoal.fromMap(Map<String, dynamic> map) {
     return YearGoal(
       year: map['year'] as int,
-      target: map['target'] as int? ?? 52,
+      target: map['target'] as int? ?? 0,
       isSetByUser: (map['is_set_by_user'] as int? ?? 0) == 1,
     );
   }

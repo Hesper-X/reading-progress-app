@@ -573,7 +573,7 @@ Future<void> _importData() async {
       await database.delete('settings', where: "key NOT IN ('pro_purchased')");
 
       // 重新插入默认设置
-      await database.insert('settings', {'key': 'yearly_goal', 'value': '52'});
+      await database.insert('settings', {'key': 'yearly_goal', 'value': '0'});
       await database.insert('settings', {'key': 'theme', 'value': 'light'});
       await database.insert('settings', {'key': 'daily_reminder', 'value': 'false'});
       await database.insert('settings', {'key': 'reminder_time', 'value': '21:00'});

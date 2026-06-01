@@ -28,7 +28,7 @@ class AppConstants {
   static const String proProductId = 'pro_version';
 
   // 默认设置
-  static const int defaultYearlyGoal = 52; // V3.0: 默认改为52
+  static const int defaultYearlyGoal = 0; // V3.4: 默认改为0，让用户首次使用后自行调整
   static const String defaultReminderTime = '21:00';
 
   // V3.0 分享图尺寸
