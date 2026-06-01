@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/books_provider.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
 
@@ -15,35 +13,25 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> {
   bool _navigated = false;
-  bool _loadStarted = false;
 
   @override
   void initState() {
     super.initState();
-    // 首次帧回调，标记加载已触发
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _loadStarted = true;
-    });
+    // 固定 1.5 秒后跳转首页（覆盖 Flutter 引擎初始化 + 首页首帧渲染）
+    Future.delayed(const Duration(milliseconds: 1500), _navigateToHome);
   }
 
-  void _navigateIfReady(BooksProvider provider) {
-    if (_navigated || !_loadStarted) return;
-    // 数据加载完成后跳转
-    if (!provider.isLoading) {
-      _navigated = true;
-      if (mounted && context.mounted) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-      }
+  void _navigateToHome() {
+    if (_navigated) return;
+    _navigated = true;
+    if (mounted && context.mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BooksProvider>(
-      builder: (context, provider, _) {
-        _navigateIfReady(provider);
-        return Scaffold(
+    return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -126,8 +114,6 @@ class _SplashPageState extends State<SplashPage> {
           ],
         ),
       ),
-    );
-      },
     );
   }
 }
