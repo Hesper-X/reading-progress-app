@@ -14,34 +14,36 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  bool _navigated = false;
+  bool _loadStarted = false;
+
   @override
   void initState() {
     super.initState();
-    _checkDataReady();
-  }
-
-  void _checkDataReady() {
+    // 首次帧回调，标记加载已触发
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final provider = context.read<BooksProvider>();
-      if (!provider.isLoading) {
-        _navigateToHome();
-      } else {
-        // 数据未加载完，监听下次帧再检查
-        Future.delayed(const Duration(milliseconds: 100), _checkDataReady);
-      }
+      _loadStarted = true;
     });
   }
 
-  void _navigateToHome() {
-    if (mounted && context.mounted) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+  void _navigateIfReady(BooksProvider provider) {
+    if (_navigated || !_loadStarted) return;
+    // 数据加载完成后跳转
+    if (!provider.isLoading) {
+      _navigated = true;
+      if (mounted && context.mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<BooksProvider>(
+      builder: (context, provider, _) {
+        _navigateIfReady(provider);
+        return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -124,6 +126,8 @@ class _SplashPageState extends State<SplashPage> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }
