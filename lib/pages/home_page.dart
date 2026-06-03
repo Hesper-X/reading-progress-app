@@ -237,9 +237,6 @@ class _HomePageState extends State<HomePage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _checkShareEntry();
           });
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
           final readingBooks = provider.readingBooks;
           return Stack(
             fit: StackFit.expand,
