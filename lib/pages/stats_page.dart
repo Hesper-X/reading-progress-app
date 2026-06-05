@@ -1450,16 +1450,44 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
       return const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)));
     }
     if (_top3 == null || _top3!.isEmpty) {
-      return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('⏱', style: TextStyle(fontSize: 15)),
+              const SizedBox(width: 6),
+              const Text('阅读投入 Top3',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('（书名 / 阅读累计 / 打卡天数）',
+              style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text('暂无打卡数据',
+                  style: TextStyle(fontSize: 13, color: Color(0xFFADB5BD))),
+            ),
+          ),
+        ],
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 14, height: 14),
-            SizedBox(width: 6),
-            Text('阅读投入 Top3',
+            const Text('⏱', style: TextStyle(fontSize: 15)),
+            const SizedBox(width: 6),
+            const Text('阅读投入 Top3',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
           ],
         ),
