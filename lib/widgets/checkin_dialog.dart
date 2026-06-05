@@ -464,6 +464,7 @@ class _DialogContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       width: double.infinity,
       constraints: BoxConstraints(
@@ -476,7 +477,7 @@ class _DialogContainer extends StatelessWidget {
           topRight: Radius.circular(20),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + bottomInset),
       child: SingleChildScrollView(
         child: child,
       ),
@@ -656,7 +657,7 @@ class _DurationSelector extends StatelessWidget {
                 value: selectedHour,
                 hint: '小时',
                 items: [null, ...List.generate(24, (i) => i + 1)],
-                itemLabel: (v) => v == null ? '—' : '${v}h',
+                itemLabel: (v) => v == null ? '0小时' : '$v小时',
                 onChanged: onHourChanged,
               ),
             ),
@@ -666,7 +667,7 @@ class _DurationSelector extends StatelessWidget {
                 value: selectedMinute,
                 hint: '分钟',
                 items: List.generate(13, (i) => i * 5),
-                itemLabel: (v) => v == 0 ? '0 分钟' : '${v}分钟',
+                itemLabel: (v) => v == 0 ? '0分钟' : '${v}分钟',
                 onChanged: (v) => onMinuteChanged(v ?? 0),
               ),
             ),
