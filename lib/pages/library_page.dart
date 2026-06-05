@@ -1,9 +1,10 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/purchase_provider.dart';
+import '../providers/checkin_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 import '../widgets/book_cover.dart';
@@ -243,33 +244,76 @@ class _WishBookCard extends StatelessWidget {
 
 // ============ 在读 Tab ============
 
-class _ReadingTab extends StatelessWidget {
+class _ReadingTab extends StatefulWidget {
   final List<Book> books;
   const _ReadingTab({required this.books});
 
   @override
+  State<_ReadingTab> createState() => _ReadingTabState();
+}
+
+class _ReadingTabState extends State<_ReadingTab> {
+  Map<int, Map<String, int>> _checkinStats = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final books = widget.books;
+    if (books.isEmpty) return;
+    final provider = context.read<CheckinProvider>();
+    final stats = await provider.getBooksStats(books.map((b) => b.id!).toList());
+    if (mounted) setState(() => _checkinStats = stats);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (books.isEmpty) {
+    if (widget.books.isEmpty) {
       return _emptyState(context, '还没有在读书籍', '在[首页]或者[书架]的[想读]清单，点击[开始阅读]后，\n它们会出现在这里');
     }
-    final sorted = List<Book>.from(books)
+    final sorted = List<Book>.from(widget.books)
       ..sort((a, b) => (b.startDate).compareTo(a.startDate));
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: sorted.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _ReadingBookCard(book: sorted[i]),
+      itemBuilder: (_, i) => _ReadingBookCard(
+        book: sorted[i],
+        checkinStats: _checkinStats[sorted[i].id!],
+      ),
     );
   }
 }
 
 class _ReadingBookCard extends StatelessWidget {
   final Book book;
-  const _ReadingBookCard({required this.book});
+  final Map<String, int>? checkinStats;
+
+  const _ReadingBookCard({required this.book, this.checkinStats});
+
+  static String _formatDuration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0 && m == 0) return '';
+    if (h == 0) return '$m 分钟';
+    if (m == 0) return '$h 小时';
+    return '${h}小时${m}分钟';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final hasCheckin = checkinStats != null && (checkinStats!['checkinDays'] ?? 0) > 0;
+    return GestureDetector(
+      onTap: () {
+        if (book.id != null) {
+          Navigator.pushNamed(context, AppRoutes.bookNotes, arguments: book.id);
+        }
+      },
+      child: Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         gradient: const LinearGradient(
@@ -298,8 +342,25 @@ class _ReadingBookCard extends StatelessWidget {
                 Text(book.title,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
-                if (book.author.isNotEmpty)
-                  Text(book.author, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                Row(
+                  children: [
+                    if (book.author.isNotEmpty)
+                      Expanded(
+                        child: Text(book.author,
+                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    Text('阅读周期 ${book.elapsedDays} 天',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  ],
+                ),
+                if (hasCheckin) ...[
+                  const SizedBox(height: 4),
+                  Text('阅读累计 ${_formatDuration(checkinStats!['totalMinutes'] ?? 0)}',
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Text('打卡 ${checkinStats!['checkinDays']} 天',
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                ],
               ],
             ),
           ),
@@ -343,12 +404,14 @@ class _ReadingBookCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              Text('已读 ${book.elapsedDays} 天',
-                  style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+              if (!hasCheckin)
+                Text('已读 ${book.elapsedDays} 天',
+                    style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
       ),
+    ),
     );
   }
 

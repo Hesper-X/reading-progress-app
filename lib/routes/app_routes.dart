@@ -13,4 +13,5 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String wish = '/wish';
   static const String addDone = '/add-done';
+  static const String bookNotes = '/book-notes'; // V3.5: 笔记时间轴页
 }
