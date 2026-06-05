@@ -186,6 +186,8 @@ class _CheckinUpdateDialogState extends State<CheckinUpdateDialog> {
       final total = widget.lastCheckin!.durationMin ?? 0;
       _selectedHour = total ~/ 60;
       _selectedMinute = total % 60;
+      // 分钟下拉步长为5，把非5倍数的值就近取整
+      _selectedMinute = (_selectedMinute ~/ 5) * 5;
       if (widget.lastCheckin!.note != null) {
         _noteController.text = widget.lastCheckin!.note!;
       }
