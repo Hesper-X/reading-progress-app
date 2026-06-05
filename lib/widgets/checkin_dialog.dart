@@ -185,6 +185,8 @@ class _CheckinUpdateDialogState extends State<CheckinUpdateDialog> {
       _selectedBookId = widget.lastCheckin!.bookId;
       final total = widget.lastCheckin!.durationMin ?? 0;
       _selectedHour = total ~/ 60;
+      // 小时下拉items从null开始，0小时用null表示
+      if (_selectedHour == 0) _selectedHour = null;
       _selectedMinute = total % 60;
       // 分钟下拉步长为5，把非5倍数的值就近取整
       _selectedMinute = (_selectedMinute ~/ 5) * 5;
