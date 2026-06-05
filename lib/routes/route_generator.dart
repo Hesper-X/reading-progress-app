@@ -6,6 +6,7 @@ import '../pages/main_shell.dart';
 import '../pages/pro_page.dart';
 import '../pages/wish_book_page.dart';
 import '../pages/add_done_book_page.dart';
+import '../pages/book_notes_page.dart';
 import '../models/book.dart';
 import 'app_routes.dart';
 
@@ -83,6 +84,15 @@ class RouteGenerator {
 
       case AppRoutes.settings:
         return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 4));
+
+      case AppRoutes.bookNotes:
+        final bookId = settings.arguments;
+        if (bookId is int) {
+          return MaterialPageRoute(
+            builder: (_) => BookNotesPage(bookId: bookId),
+          );
+        }
+        return MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 1));
 
       default:
         // 未知路由 → 回到首页
