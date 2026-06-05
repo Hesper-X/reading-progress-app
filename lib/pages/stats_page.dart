@@ -1533,21 +1533,24 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
           );
         }),
         if (_totals != null) ...[
-          Divider(color: Color(0xFFF1F3F5), thickness: 1),
-          Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Text('本周期合计',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF868E96))),
-                Spacer(),
-                Text(_formatDuration(_totals!['totalMinutes'] ?? 0),
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
-                SizedBox(width: 6),
-                Text(' 天',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
-              ],
-            ),
+          const Divider(color: Color(0xFFF1F3F5), thickness: 1),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('本周期合计阅读时长：',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF868E96))),
+              Text(_formatDuration(_totals!['totalMinutes'] ?? 0),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Text('本周期合计打卡天数：',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF868E96))),
+              Text('${_totals!['totalDays'] ?? 0} 天',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+            ],
           ),
         ],
       ],

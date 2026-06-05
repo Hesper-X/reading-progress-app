@@ -1267,9 +1267,9 @@ class _ShareCheckinTop3 extends StatelessWidget {
               Expanded(
                 child: Text('《$title》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
-              Text(_formatDuration(totalMin), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
-              const Text(' · ', style: TextStyle(fontSize: 10, color: Colors.white54)),
-              Text('$checkinDays 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+              Text(_formatDuration(totalMin), style: const TextStyle(fontSize: 10, color: Colors.white70)),
+              const Text(' · ', style: TextStyle(fontSize: 10, color: Colors.white70)),
+              Text('$checkinDays 天', style: const TextStyle(fontSize: 10, color: Colors.white70)),
             ]),
           );
         }),
