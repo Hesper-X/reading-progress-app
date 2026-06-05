@@ -342,7 +342,31 @@ class _WishBookPageState extends State<WishBookPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // === 书名（必填）===
-              _FormLabel(text: '书名', required: true),
+              Row(
+                children: [
+                  _FormLabel(text: '书名', required: true),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _takePhotoForOcr,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFF0F0),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Color(0xFFFFC9C9), width: 1),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('📷', style: TextStyle(fontSize: 12)),
+                          SizedBox(width: 4),
+                          Text('拍照取书名', style: TextStyle(fontSize: 12, color: Color(0xFFFF6B6B), fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               Stack(
                 children: [
@@ -366,7 +390,7 @@ class _WishBookPageState extends State<WishBookPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: AppColors.primary, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.fromLTRB(16, 14, 56, 28),
+                      contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                       counterText: '',
                     ),
                     maxLength: AppConstants.maxTitleLength,
@@ -385,25 +409,7 @@ class _WishBookPageState extends State<WishBookPage> {
                       },
                     ),
                   ),
-                  // V3.5 拍照取书名按钮
-                  Positioned(
-                    right: 56,
-                    bottom: 6,
-                    child: GestureDetector(
-                      onTap: _takePhotoForOcr,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF0F0),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Center(
-                          child: Text('📷', style: TextStyle(fontSize: 16)),
-                        ),
-                      ),
-                    ),
-                  ),
+
                 ],
               ),
               const SizedBox(height: 24),
