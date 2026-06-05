@@ -1105,26 +1105,157 @@ Future<void> _importData() async {
     );
   }
 
-  void _showLegalDialog(String title, String content) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: Text(content, style: const TextStyle(fontSize: 13, height: 1.5)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('关闭'),
+  String _legalAssetPath(String title) {
+    switch (title) {
+      case '用户协议': return 'assets/legal/user_agreement.html';
+      case '隐私政策': return 'assets/legal/privacy_policy.html';
+      case '个人信息收集清单': return 'assets/legal/personal_info_list.html';
+      case '第三方信息共享清单': return 'assets/legal/third_party_sharing.html';
+      case '开源许可': return 'assets/legal/open_source_licenses.html';
+      default: return 'assets/legal/user_agreement.html';
+    }
+  }
+
+  Future<void> _showLegalDialog(String title, String oldContent) async {
+    final assetPath = _legalAssetPath(title);
+    String html;
+    try {
+      html = await rootBundle.loadString(assetPath);
+    } catch (_) {
+      html = '<!DOCTYPE html><html><body><p>' + oldContent + '</p></body></html>';
+    }
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shape: const Border(
+              bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1),
+            ),
+            title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(ctx),
+            ),
           ),
-        ],
+          body: _LegalHtmlBody(html: html),
+
+        ),
       ),
     );
   }
 }
 
-/// 设置项数据模型
+/// 简单的法律文档 HTML 渲染组件（不依赖 WebView）
+class _LegalHtmlBody extends StatelessWidget {
+  final String html;
+  const _LegalHtmlBody({required this.html});
+
+  @override
+  Widget build(BuildContext context) {
+    final content = _parseHtml(html);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: content,
+      ),
+    );
+  }
+
+  List<Widget> _parseHtml(String html) {
+    final widgets = <Widget>[];
+    final lines = html
+        .replaceAll(RegExp(r'<style[^>]*>.*?</style>', dotAll: true), '')
+        .split('\n');
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+
+      if (trimmed.startsWith('<h1>')) {
+        final text = trimmed.replaceAll(RegExp(r'<[^>]+>'), '');
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(text, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+        ));
+      } else if (trimmed.startsWith('<h2>')) {
+        final text = trimmed.replaceAll(RegExp(r'<[^>]+>'), '');
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 6),
+          child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+        ));
+      } else if (trimmed == '<hr>' || trimmed == '<hr/>' || trimmed == '<hr />') {
+        widgets.add(const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Divider(color: Color(0xFFDEE2E6), height: 1),
+        ));
+      } else if (trimmed.startsWith('<table')) {
+        // skip, in table
+      } else if (trimmed == '</table>') {
+        // skip
+      } else if (trimmed.startsWith('<tr>')) {
+        final cells = trimmed
+            .replaceAll(RegExp(r'<t[hd][^>]*>'), '|')
+            .replaceAll(RegExp(r'</t[hd]>'), '|')
+            .split('|')
+            .where((s) => s.trim().isNotEmpty)
+            .map((s) => s.replaceAll(RegExp(r'<[^>]+>'), '').trim())
+            .toList();
+        if (cells.isNotEmpty) {
+          widgets.add(Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text(cells.join('  |  '), style: const TextStyle(fontSize: 12, height: 1.5)),
+          ));
+        }
+      } else if (trimmed.startsWith('<ul>') || trimmed == '<ul>') {
+        // skip
+      } else if (trimmed == '</ul>') {
+        // skip
+      } else if (trimmed.startsWith('<li>')) {
+        final text = trimmed.replaceAll(RegExp(r'<[^>]+>'), '');
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 4),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('\u2022 ', style: TextStyle(fontSize: 14, color: Color(0xFF333))),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 14, color: Color(0xFF333), height: 1.6))),
+          ]),
+        ));
+      } else if (trimmed.startsWith('<p')) {
+        final text = trimmed.replaceAll(RegExp(r'<[^>]+>'), '');
+        if (text.isNotEmpty) {
+          widgets.add(Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(text, style: const TextStyle(fontSize: 14, color: Color(0xFF333), height: 1.8)),
+          ));
+        }
+      } else if (trimmed.startsWith('<div class="lib"')) {
+        final inner = trimmed
+            .replaceAll(RegExp(r'<div[^>]*>'), '')
+            .replaceAll('</div>', '')
+            .replaceAll(RegExp(r'<p[^>]*>|</p>'), '')
+            .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+            .replaceAll(RegExp(r'<strong>|</strong>|<a[^>]+>|</a>'), '');
+        widgets.add(Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(inner.trim(), style: const TextStyle(fontSize: 13, color: Color(0xFF495057), height: 1.6)),
+        ));
+      } else if (trimmed.startsWith('</html>') || trimmed.startsWith('</body>')) {
+        // skip
+      }
+    }
+    return widgets;
+  }
+}
 class _SettingCardData {
   final String icon;
   final String title;
