@@ -85,7 +85,11 @@ class StatsPage extends StatelessWidget {
                   _ProTipBar(),
 
                 // ★ V3.3 年度统计标题
-                const Text('📊 年度统计', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+                Row(children: [
+                  SvgPicture.asset('assets/icons/stat-icon-yearly-chart.svg', width: 14, height: 14),
+                  const SizedBox(width: 6),
+                  const Text(' 年度统计', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+                ]),
                 const SizedBox(height: 12),
 
                 // === 1. 顶部统计卡片 ===
@@ -1375,6 +1379,39 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
     _load();
   }
 
+  /// 监听筛选变化自动重新加载
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final filter = context.watch<FilterProvider>();
+    _loadWithFilter(filter);
+  }
+
+  Future<void> _loadWithFilter(FilterProvider filter) async {
+    // 避免重复调用
+    _loading = true;
+    if (mounted) setState(() {});
+
+    try {
+      final year = filter.selectedYear;
+      final month = filter.selectedMonth;
+      final dbHelper = DatabaseHelper.instance;
+      final repo = CheckinRepository(dbHelper);
+      final top3Results = await repo.getTop3CheckinBooks(year: year, month: month);
+      final totalStats = await repo.getTotalCheckinStats(year: year, month: month);
+
+      if (mounted) {
+        setState(() {
+          _top3 = top3Results;
+          _totals = totalStats;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _load() async {
     try {
       final filter = context.read<FilterProvider>();
@@ -1402,9 +1439,9 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
     final h = minutes ~/ 60;
     final m = minutes % 60;
     if (h == 0 && m == 0) return '';
-    if (h == 0) return ' 分钟';
-    if (m == 0) return ' 小时';
-    return '小时分钟';
+    if (h == 0) return '${m}分钟';
+    if (m == 0) return '${h}小时';
+    return '${h}小时${m}分钟';
   }
 
   @override

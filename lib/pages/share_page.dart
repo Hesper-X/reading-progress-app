@@ -746,9 +746,16 @@ class _ModuleSwitches extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFFF1F3F5)),
           _SwitchRow(
             icon: const Text('⏱', style: TextStyle(fontSize: 18, color: Color(0xFFFF6B6B))),
-            label: '最长与最短',
+            label: '阅读周期',
             value: showLongestShortest,
             onChanged: (v) => onToggle('longestShortest', v),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1F3F5)),
+          _SwitchRow(
+            icon: const Text('⏱', style: TextStyle(fontSize: 18, color: Color(0xFFFF6B6B))),
+            label: '阅读投入 Top3',
+            value: showCheckinTop3,
+            onChanged: (v) => onToggle('checkinTop3', v),
           ),
           const Divider(height: 1, color: Color(0xFFF1F3F5)),
           _SwitchRow(
@@ -763,13 +770,6 @@ class _ModuleSwitches extends StatelessWidget {
             label: '最爱作者',
             value: showFavoriteAuthors,
             onChanged: (v) => onToggle('favoriteAuthors', v),
-          ),
-          const Divider(height: 1, color: Color(0xFFF1F3F5)),
-          _SwitchRow(
-            icon: const Text('📚', style: TextStyle(fontSize: 18, color: Color(0xFFFF6B6B))),
-            label: '阅读投入 Top3',
-            value: showCheckinTop3,
-            onChanged: (v) => onToggle('checkinTop3', v),
           ),
         ],
       ),
@@ -1129,7 +1129,7 @@ class _ShareDurSection extends StatelessWidget {
         const Row(children: [
           Text('⏱', style: TextStyle(fontSize: 11, color: Colors.white70)),
           const SizedBox(width: 4),
-          const Text('最长与最短', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+          const Text('阅读周期', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
         ]),
         const SizedBox(height: 4),
         Row(
@@ -1244,7 +1244,7 @@ class _ShareCheckinTop3 extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Text('📚', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          const Text('⏱', style: TextStyle(fontSize: 11, color: Colors.white70)),
           const SizedBox(width: 4),
           const Text('阅读投入 Top3', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
         ]),
