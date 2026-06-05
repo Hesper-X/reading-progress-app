@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/books_provider.dart';
 import '../providers/purchase_provider.dart';
@@ -27,6 +30,7 @@ class _WishBookPageState extends State<WishBookPage> {
   final _authorFocusNode = FocusNode();
   bool _isSaving = false;
   bool _isDeleting = false;
+  final _picker = ImagePicker();
 
   /// V3.2 编辑模式
   bool get _isEditing => widget.editBook != null;
@@ -107,6 +111,129 @@ class _WishBookPageState extends State<WishBookPage> {
         }
       }
     }
+  }
+
+  // ============ V3.5 OCR 拍照取书名 ============
+
+  Future<void> _takePhotoForOcr() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+      if (photo == null) return;
+
+      // 用拍照的图片进行 OCR 识别
+      final result = await _ocrImage(File(photo.path));
+
+      if (!mounted) return;
+
+      if (result != null && result.isNotEmpty) {
+        _titleController.text = result;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📖 已识别书名，请确认是否正确'),
+            duration: Duration(milliseconds: 2500),
+          ),
+        );
+      } else {
+        _showOcrFailDialog();
+      }
+    } catch (e) {
+      if (mounted) _showOcrFailDialog();
+    }
+  }
+
+  /// OCR 识别图片中的文字
+  /// 当前使用百度 OCR API（需要替换为本地 OCR 方案）
+  /// TODO: 替换为移动端本地 OCR（iOS Vision / Android ML Kit）
+  Future<String?> _ocrImage(File imageFile) async {
+    try {
+      // 尝试使用 API 识别
+      return await _baiduOcr(imageFile);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 百度 OCR API（通用文字识别）
+  Future<String?> _baiduOcr(File imageFile) async {
+    // TODO: 上架前替换为真实 API Key
+    // 注册百度智能云 OCR 获取 API Key 和 Secret Key
+    // https://console.bce.baidu.com/ai/#/ai/ocr/overview/index
+    const apiKey = '';
+    const secretKey = '';
+    if (apiKey.isEmpty || secretKey.isEmpty) return null;
+
+    final httpClient = HttpClient();
+    try {
+      // 1. 获取 access_token
+      final tokenUrl = Uri.parse(
+        'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$apiKey&client_secret=$secretKey');
+      final tokenReq = await httpClient.getUrl(tokenUrl);
+      final tokenResp = await tokenReq.close();
+      final tokenBody = await tokenResp.transform(utf8.decoder).join();
+      final tokenJson = jsonDecode(tokenBody);
+      final accessToken = tokenJson['access_token'] as String?;
+      if (accessToken == null) return null;
+
+      // 2. 调用通用文字识别
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final ocrUrl = Uri.parse(
+          'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=$accessToken');
+      final ocrReq = await httpClient.postUrl(ocrUrl);
+      ocrReq.headers.set('Content-Type', 'application/x-www-form-urlencoded');
+      ocrReq.write('image=' + Uri.encodeQueryComponent(base64Image));
+      final ocrResp = await ocrReq.close();
+      final ocrBody = await ocrResp.transform(utf8.decoder).join();
+      final ocrJson = jsonDecode(ocrBody);
+
+      final words = ocrJson['words_result'] as List?;
+      if (words == null || words.isEmpty) return null;
+
+      // 提取最可能的书名（取第一个结果或最长的文本行）
+      String best = '';
+      for (final w in words) {
+        final text = w['words'] as String? ?? '';
+        if (text.length > best.length) best = text;
+      }
+      return best.isNotEmpty ? best : null;
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  void _showOcrFailDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('识别失败'),
+        content: const Text('未能识别到书名'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _takePhotoForOcr();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('重试'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _titleFocusNode.requestFocus();
+            },
+            child: const Text('手动输入'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// V3.2 删除书籍（仅编辑模式可用）
@@ -225,7 +352,7 @@ class _WishBookPageState extends State<WishBookPage> {
                     textInputAction: TextInputAction.next,
                     onTapOutside: (_) => _titleFocusNode.unfocus(),
                     decoration: InputDecoration(
-                      hintText: '输入书名',
+                      hintText: '拍照可自动填充书名',
                       hintStyle: const TextStyle(color: AppColors.textMuted),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -239,7 +366,7 @@ class _WishBookPageState extends State<WishBookPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: AppColors.primary, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                      contentPadding: const EdgeInsets.fromLTRB(16, 14, 56, 28),
                       counterText: '',
                     ),
                     maxLength: AppConstants.maxTitleLength,
@@ -256,6 +383,25 @@ class _WishBookPageState extends State<WishBookPage> {
                           style: const TextStyle(fontSize: 12, color: Color(0xFFADB5BD)),
                         );
                       },
+                    ),
+                  ),
+                  // V3.5 拍照取书名按钮
+                  Positioned(
+                    right: 56,
+                    bottom: 6,
+                    child: GestureDetector(
+                      onTap: _takePhotoForOcr,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF0F0),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Center(
+                          child: Text('📷', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
                     ),
                   ),
                 ],
