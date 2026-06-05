@@ -221,15 +221,26 @@ class _WishBookPageState extends State<WishBookPage> {
             style: TextButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(21)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('重试'),
+            child: const Text('重试', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _titleFocusNode.requestFocus();
             },
-            child: const Text('手动输入'),
+            style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF868E96),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(21),
+                side: const BorderSide(color: Color(0xFFDEE2E6)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('手动输入', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF868E96))),
           ),
         ],
       ),
