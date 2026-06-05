@@ -5,11 +5,13 @@ import 'databases/database_helper.dart';
 import 'repositories/book_repository.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/goal_repository.dart';
+import 'repositories/checkin_repository.dart';
 import 'providers/books_provider.dart';
 import 'providers/filter_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/purchase_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/checkin_provider.dart';
 import 'services/notification_service.dart';
 import 'services/reminder_scheduler.dart';
 import 'theme/app_theme.dart';
@@ -33,6 +35,7 @@ void main() {
       bookRepository: bookRepository,
       settingsRepository: settingsRepository,
       goalRepository: goalRepository,
+      checkinRepository: CheckinRepository(dbHelper),
     ),
   );
 }
@@ -42,17 +45,25 @@ class _DelayedInitApp extends StatelessWidget {
   final BookRepository bookRepository;
   final SettingsRepository settingsRepository;
   final GoalRepository goalRepository;
+  final CheckinRepository checkinRepository;
 
   const _DelayedInitApp({
     required this.bookRepository,
     required this.settingsRepository,
     required this.goalRepository,
+    required this.checkinRepository,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => CheckinProvider(
+            repository: checkinRepository,
+            bookRepository: bookRepository,
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => BooksProvider(
             repository: bookRepository,
@@ -121,6 +132,7 @@ class _DelayedInitWrapperState extends State<_DelayedInitWrapper> {
     if (!mounted) return;
 
     // 加载数据
+    context.read<CheckinProvider>().loadMonthCheckins();
     context.read<BooksProvider>().loadBooks();
     context.read<FilterProvider>().loadInitial();
     context.read<SettingsProvider>().loadSettings();

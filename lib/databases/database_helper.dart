@@ -7,7 +7,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _dbName = 'reading_progress.db';
-  static const int _dbVersion = 3; // V3.0: version 3
+  static const int _dbVersion = 4; // V3.5: version 4 (checkin_details)
 
   DatabaseHelper._init();
 
@@ -105,6 +105,30 @@ class DatabaseHelper {
       // V2.0 → V3.0
       await _upgradeV2ToV3(db);
     }
+
+    if (oldVersion < 4) {
+      // V3.0 → V3.5: 新增打卡表
+      await _upgradeV3ToV4(db);
+    }
+  }
+
+  /// V3.0 → V3.5 迁移：新增 checkin_details 表
+  Future<void> _upgradeV3ToV4(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS checkin_details (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        checkin_date TEXT NOT NULL,
+        duration_min INTEGER,
+        note TEXT,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (book_id) REFERENCES books(id)
+      )
+    ''');
+
+    // 索引
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_checkin_book_date ON checkin_details(book_id, checkin_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_checkin_date ON checkin_details(checkin_date)');
   }
 
   /// V2.0 → V3.0 迁移
