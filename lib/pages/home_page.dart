@@ -8,6 +8,7 @@ import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 import '../widgets/book_cover.dart';
+import '../widgets/checkin_calendar.dart';
 
 /// 环形进度条组件 — 支持庆祝动画模式
 class CircularProgress extends StatefulWidget {
@@ -237,7 +238,6 @@ class _HomePageState extends State<HomePage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _checkShareEntry();
           });
-          final readingBooks = provider.readingBooks;
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -253,7 +253,7 @@ class _HomePageState extends State<HomePage> {
                     // V3.0 设计：目标/已读/在读/想读 四数字行
                     _GoalRow(provider: provider),
                     const SizedBox(height: 20),
-                    _ReadingSection(books: readingBooks),
+                    const CheckinCalendar(),
                     const SizedBox(height: 24),
                     // V3.0：庆祝横幅文案改为目标达成→分享Tab
               if (_shareEntryShown)
