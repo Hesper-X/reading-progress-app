@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
+import '../providers/checkin_provider.dart';
 import '../theme/colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../databases/database_helper.dart';
+import '../repositories/checkin_repository.dart';
 
 /// 统计页（V3.1：7栏位 + 年度趋势柱状图 + 底部按钮遮罩）
 class StatsPage extends StatelessWidget {
@@ -118,10 +121,14 @@ class StatsPage extends StatelessWidget {
                 _FavoriteBooksSection(data: favoriteBooks),
                 const SizedBox(height: 20),
 
-                // === 5. 最长与最短 ===
-                _SectionTitle(icon: '⏱', text: '读书时间·最长与最短'),
+                // === 5. 阅读周期 · 最长与最短 ===
+                _SectionTitle(icon: '⏱', text: '阅读周期·最长与最短'),
                 const SizedBox(height: 8),
                 _LongestShortestSection(longest: longest, shortest: shortest),
+                const SizedBox(height: 20),
+
+                // === V3.5 阅读投入 Top3 ===
+                _CheckinTop3Section(),
                 const SizedBox(height: 20),
 
                 // === 6. 已读书单 ===
@@ -1343,6 +1350,141 @@ class _YearlyTrendSection extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+
+
+// ============ V3.5 阅读投入 Top3 ============
+
+class _CheckinTop3Section extends StatefulWidget {
+  @override
+  State<_CheckinTop3Section> createState() => _CheckinTop3SectionState();
+}
+
+class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
+  List<Map<String, dynamic>>? _top3;
+  Map<String, int>? _totals;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final filter = context.read<FilterProvider>();
+      final year = filter.selectedYear;
+      final month = filter.selectedMonth;
+      final dbHelper = DatabaseHelper.instance;
+      final repo = CheckinRepository(dbHelper);
+      final top3Results = await repo.getTop3CheckinBooks(year: year, month: month);
+      final totalStats = await repo.getTotalCheckinStats(year: year, month: month);
+
+      if (mounted) {
+        setState(() {
+          _top3 = top3Results;
+          _totals = totalStats;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  static String _formatDuration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0 && m == 0) return '';
+    if (h == 0) return ' 分钟';
+    if (m == 0) return ' 小时';
+    return '小时分钟';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)));
+    }
+    if (_top3 == null || _top3!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SvgPicture.asset('assets/icons/stat-icon-fav-books.svg', width: 14, height: 14),
+            SizedBox(width: 6),
+            Text('阅读投入 Top3',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF212529))),
+          ],
+        ),
+        SizedBox(height: 4),
+        Text('书名 / 阅读累计 / 打卡天数',
+            style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+        SizedBox(height: 8),
+        ...List.generate(_top3!.length, (i) {
+          final item = _top3![i];
+          final medals = ['🥇', '🥈', '🥉'];
+          final totalMin = (item['total_minutes'] as num?)?.toInt() ?? 0;
+          final checkinDays = (item['checkin_days'] as num?)?.toInt() ?? 0;
+          final title = (item['title'] as String?) ?? '';
+          final author = (item['author'] as String?) ?? '';
+          return Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Text(medals[i], style: TextStyle(fontSize: 14)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF212529)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      if (author.isNotEmpty)
+                        Text(author,
+                            style: TextStyle(fontSize: 12, color: Color(0xFF868E96)),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(_formatDuration(totalMin),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
+                SizedBox(width: 6),
+                Text(' 天',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+              ],
+            ),
+          );
+        }),
+        if (_totals != null) ...[
+          Divider(color: Color(0xFFF1F3F5), thickness: 1),
+          Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Text('本周期合计',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF868E96))),
+                Spacer(),
+                Text(_formatDuration(_totals!['totalMinutes'] ?? 0),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF212529))),
+                SizedBox(width: 6),
+                Text(' 天',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
