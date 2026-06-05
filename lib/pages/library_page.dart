@@ -5,6 +5,7 @@ import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/purchase_provider.dart';
 import '../providers/checkin_provider.dart';
+import '../providers/checkin_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 import '../widgets/book_cover.dart';
@@ -447,10 +448,11 @@ class _DoneTab extends StatefulWidget {
 class _DoneTabState extends State<_DoneTab> {
   int? _selectedYear;
   List<int> _availableYears = [];
-  int _sortMode = 0; // 0=读完日期, 1=评分, 2=书名
+  int _sortMode = 0;
   bool _sortAsc0 = false;
   bool _sortAsc1 = false;
   bool _sortAsc2 = false;
+  Map<int, Map<String, int>> _checkinStats = {};
 
   @override
   void initState() {
@@ -458,7 +460,16 @@ class _DoneTabState extends State<_DoneTab> {
     _availableYears = _deriveYears();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onCountChanged?.call(_filteredBooks.length);
+      _loadCheckinStats();
     });
+  }
+
+  Future<void> _loadCheckinStats() async {
+    final books = widget.books;
+    if (books.isEmpty) return;
+    final provider = context.read<CheckinProvider>();
+    final stats = await provider.getBooksStats(books.map((b) => b.id!).toList());
+    if (mounted) setState(() => _checkinStats = stats);
   }
 
   @override
@@ -599,7 +610,10 @@ class _DoneTabState extends State<_DoneTab> {
                 padding: const EdgeInsets.all(16),
                 itemCount: filtered.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => _DoneBookCard(book: filtered[i]),
+                itemBuilder: (_, i) => _DoneBookCard(
+                  book: filtered[i],
+                  checkinStats: _checkinStats[filtered[i].id!],
+                ),
               ),
       ),
     ]);
@@ -609,12 +623,31 @@ class _DoneTabState extends State<_DoneTab> {
 /// 已读书籍卡片（V3.0：淡绿边框 + 感想框重构 + 封面组件）
 class _DoneBookCard extends StatelessWidget {
   final Book book;
-  const _DoneBookCard({required this.book});
+  final Map<String, int>? checkinStats;
+
+  const _DoneBookCard({required this.book, this.checkinStats});
+
+  static String _formatDuration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0 && m == 0) return '';
+    if (h == 0) return '$m 分钟';
+    if (m == 0) return '$h 小时';
+    return '${h}小时${m}分钟';
+  }
 
   @override
   Widget build(BuildContext context) {
     final hasNotes = book.notes != null && book.notes!.isNotEmpty;
-    return Container(
+    final hasCheckin = checkinStats != null && (checkinStats!['checkinDays'] ?? 0) > 0;
+    return GestureDetector(
+      onTap: () {
+        if (book.id != null) {
+          Navigator.pushNamed(context, AppRoutes.bookNotes, arguments: book.id);
+        }
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -655,8 +688,19 @@ class _DoneBookCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (book.author.isNotEmpty)
-                  Text(book.author, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                Row(
+                  children: [
+                    if (book.author.isNotEmpty)
+                      Expanded(
+                        child: Text(book.author,
+                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    if (book.readingCycleDays != null)
+                      Text('阅读周期 ${book.readingCycleDays} 天',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -669,12 +713,23 @@ class _DoneBookCard extends StatelessWidget {
                       Text(book.formattedReadDate!, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                   ],
                 ),
-                if (book.readingCycleDays != null)
+                if (book.readingCycleDays != null && !hasCheckin)
                   Padding(padding: const EdgeInsets.only(top: 2),
                       child: Text('阅读了 ${book.readingCycleDays} 天', style: const TextStyle(fontSize: 12, color: AppColors.textMuted))),
                 if (book.readCount > 1)
                   Padding(padding: const EdgeInsets.only(top: 2),
                       child: Text('已读 ${book.readCount} 次', style: const TextStyle(fontSize: 12, color: AppColors.primary))),
+                if (checkinStats != null && (checkinStats!['checkinDays'] ?? 0) > 0)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text('阅读累计 ${_formatDuration(checkinStats!['totalMinutes'] ?? 0)}',
+                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                      Text('打卡 ${checkinStats!['checkinDays']} 天',
+                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                    ],
+                  ),
               ]),
             ),
           ]),
@@ -708,6 +763,7 @@ class _DoneBookCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
       ),
     );
   }
