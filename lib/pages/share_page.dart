@@ -588,12 +588,12 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   _ShareFavBooks(data: favBooks),
                 if (widget.showLongestShortest && longest != null)
                   _ShareDurSection(longest: longest!, shortest: shortest ?? longest!),
+                if (widget.showCheckinTop3 && _top3Loaded && _checkinTop3 != null && _checkinTop3!.isNotEmpty)
+                  _ShareCheckinTop3(data: _checkinTop3!, totals: _checkinTotals),
                 if (widget.showReadList && readList.isNotEmpty)
                   _ShareReadList(books: readList),
                 if (widget.showFavoriteAuthors && favAuthors.isNotEmpty)
                   _ShareFavAuthors(data: favAuthors),
-                if (widget.showCheckinTop3 && _top3Loaded && _checkinTop3 != null && _checkinTop3!.isNotEmpty)
-                  _ShareCheckinTop3(data: _checkinTop3!, totals: _checkinTotals),
                   ]),
                 ),
 
@@ -1233,9 +1233,9 @@ class _ShareCheckinTop3 extends StatelessWidget {
     final h = minutes ~/ 60;
     final m = minutes % 60;
     if (h == 0 && m == 0) return '';
-    if (h == 0) return ' 分钟';
-    if (m == 0) return ' 小时';
-    return '小时分钟';
+    if (h == 0) return '${m}分钟';
+    if (m == 0) return '${h}小时';
+    return '${h}小时${m}分钟';
   }
 
   @override
@@ -1247,6 +1247,8 @@ class _ShareCheckinTop3 extends StatelessWidget {
           const Text('⏱', style: TextStyle(fontSize: 11, color: Colors.white70)),
           const SizedBox(width: 4),
           const Text('阅读投入 Top3', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+          const SizedBox(width: 6),
+          const Text('（书名 / 阅读累计 / 打卡天数）', style: TextStyle(fontSize: 9, color: Colors.white54)),
         ]),
         const SizedBox(height: 4),
         ...data.asMap().entries.map((entry) {
@@ -1266,7 +1268,7 @@ class _ShareCheckinTop3 extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('《》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text('《$title》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                     if (author.isNotEmpty)
                       Text(author, style: const TextStyle(fontSize: 9, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
