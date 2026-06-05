@@ -345,8 +345,9 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
   Future<void> _loadCheckinTop3() async {
     try {
       final filter = widget.filterState;
-      final year = filter.selectedYear;
-      final month = filter.selectedMonth;
+      // 阅读生涯预览：查全部年份数据
+      final year = filter.fromReadingLife ? null : filter.selectedYear;
+      final month = filter.fromReadingLife ? null : filter.selectedMonth;
       final dbHelper = DatabaseHelper.instance;
       final repo = CheckinRepository(dbHelper);
       final top3 = await repo.getTop3CheckinBooks(year: year, month: month);
