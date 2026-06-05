@@ -13,6 +13,8 @@ import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
+import '../databases/database_helper.dart';
+import '../repositories/checkin_repository.dart';
 
 /// 分享页（V3.0：可开关模块 + 弹窗预览 + 筛选联动 + 精简模式）
 class SharePage extends StatefulWidget {
@@ -33,6 +35,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
   bool _showLongestShortest = true;
   bool _showReadList = true;
   bool _showFavoriteAuthors = true;
+  bool _showCheckinTop3 = true;
 
   @override
   void initState() {
@@ -186,6 +189,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                     showLongestShortest: _showLongestShortest,
                     showReadList: _showReadList,
                     showFavoriteAuthors: _showFavoriteAuthors,
+                    showCheckinTop3: _showCheckinTop3,
                   ),
                   const SizedBox(height: 16),
                   // === 进度环规则提示（黄色气泡） ===
@@ -233,6 +237,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                     showLongestShortest: _showLongestShortest,
                     showReadList: _showReadList,
                     showFavoriteAuthors: _showFavoriteAuthors,
+                    showCheckinTop3: _showCheckinTop3,
                     onToggle: (key, value) {
                       setState(() {
                         switch (key) {
@@ -240,6 +245,7 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                           case 'longestShortest': _showLongestShortest = value; break;
                           case 'readList': _showReadList = value; break;
                           case 'favoriteAuthors': _showFavoriteAuthors = value; break;
+                          case 'checkinTop3': _showCheckinTop3 = value; break;
                         }
                       });
                     },
@@ -294,6 +300,7 @@ class _SharePreviewCard extends StatefulWidget {
   final bool showLongestShortest;
   final bool showReadList;
   final bool showFavoriteAuthors;
+  final bool showCheckinTop3;
 
   const _SharePreviewCard({
     required this.previewKey,
@@ -303,6 +310,7 @@ class _SharePreviewCard extends StatefulWidget {
     required this.showLongestShortest,
     required this.showReadList,
     required this.showFavoriteAuthors,
+    required this.showCheckinTop3,
   });
 
   @override
@@ -312,6 +320,58 @@ class _SharePreviewCard extends StatefulWidget {
 class _SharePreviewCardState extends State<_SharePreviewCard> {
   bool get _isCurrentYear => (widget.filterState.selectedYear ?? DateTime.now().year) == DateTime.now().year;
   bool get _showRing => !widget.filterState.fromReadingLife && _isCurrentYear && widget.filterState.selectedMonth == null;
+
+  List<Map<String, dynamic>>? _checkinTop3;
+  Map<String, int>? _checkinTotals;
+  bool _top3Loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCheckinTop3();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SharePreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 如果筛选条件变了，重新加载
+    if (oldWidget.filterState.selectedYear != widget.filterState.selectedYear ||
+        oldWidget.filterState.selectedMonth != widget.filterState.selectedMonth) {
+      _top3Loaded = false;
+      _loadCheckinTop3();
+    }
+  }
+
+  Future<void> _loadCheckinTop3() async {
+    try {
+      final filter = widget.filterState;
+      final year = filter.selectedYear;
+      final month = filter.selectedMonth;
+      final dbHelper = DatabaseHelper.instance;
+      final repo = CheckinRepository(dbHelper);
+      final top3 = await repo.getTop3CheckinBooks(year: year, month: month);
+      final totals = await repo.getTotalCheckinStats(year: year, month: month);
+      if (mounted) {
+        setState(() {
+          _checkinTop3 = top3;
+          _checkinTotals = totals;
+          _top3Loaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _top3Loaded = true);
+    }
+  }
+
+  static String _formatDuration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0 && m == 0) return '';
+    if (h == 0) return '$m 分钟';
+    if (m == 0) return '$h 小时';
+    return '${h}小时${m}分钟';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -531,6 +591,8 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   _ShareReadList(books: readList),
                 if (widget.showFavoriteAuthors && favAuthors.isNotEmpty)
                   _ShareFavAuthors(data: favAuthors),
+                if (widget.showCheckinTop3 && _top3Loaded && _checkinTop3 != null && _checkinTop3!.isNotEmpty)
+                  _ShareCheckinTop3(data: _checkinTop3!, totals: _checkinTotals),
                   ]),
                 ),
 
@@ -652,6 +714,7 @@ class _ModuleSwitches extends StatelessWidget {
   final bool showLongestShortest;
   final bool showReadList;
   final bool showFavoriteAuthors;
+  final bool showCheckinTop3;
   final Function(String key, bool value) onToggle;
 
   const _ModuleSwitches({
@@ -659,6 +722,7 @@ class _ModuleSwitches extends StatelessWidget {
     required this.showLongestShortest,
     required this.showReadList,
     required this.showFavoriteAuthors,
+    required this.showCheckinTop3,
     required this.onToggle,
   });
 
@@ -698,6 +762,13 @@ class _ModuleSwitches extends StatelessWidget {
             label: '最爱作者',
             value: showFavoriteAuthors,
             onChanged: (v) => onToggle('favoriteAuthors', v),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1F3F5)),
+          _SwitchRow(
+            icon: const Text('📚', style: TextStyle(fontSize: 18, color: Color(0xFFFF6B6B))),
+            label: '阅读投入 Top3',
+            value: showCheckinTop3,
+            onChanged: (v) => onToggle('checkinTop3', v),
           ),
         ],
       ),
@@ -1144,6 +1215,86 @@ class _ShareFavAuthors extends StatelessWidget {
             ]),
           );
         }),
+      ]),
+    );
+  }
+}
+
+/// 阅读投入 Top3（V3.5）
+class _ShareCheckinTop3 extends StatelessWidget {
+  final List<Map<String, dynamic>> data;
+  final Map<String, int>? totals;
+
+  const _ShareCheckinTop3({required this.data, this.totals});
+
+  static String _formatDuration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0 && m == 0) return '';
+    if (h == 0) return ' 分钟';
+    if (m == 0) return ' 小时';
+    return '小时分钟';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Text('📚', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          const SizedBox(width: 4),
+          const Text('阅读投入 Top3', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70)),
+        ]),
+        const SizedBox(height: 4),
+        ...data.asMap().entries.map((entry) {
+          final i = entry.key;
+          final item = entry.value;
+          final medals = ['\U0001F947', '\U0001F948', '\U0001F949'];
+          final totalMin = (item['total_minutes'] as num?)?.toInt() ?? 0;
+          final checkinDays = (item['checkin_days'] as num?)?.toInt() ?? 0;
+          final title = (item['title'] as String?) ?? '';
+          final author = (item['author'] as String?) ?? '';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(children: [
+              Text(medals[i], style: const TextStyle(fontSize: 11)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('《》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    if (author.isNotEmpty)
+                      Text(author, style: const TextStyle(fontSize: 9, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              Text(_formatDuration(totalMin), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+              const SizedBox(width: 4),
+              Text(' 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+            ]),
+          );
+        }),
+        if (totals != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(children: [
+              Expanded(child: Container(height: 1, color: Colors.white.withValues(alpha: 0.15))),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(children: [
+              const Text('本周期合计', style: TextStyle(fontSize: 9, color: Colors.white54)),
+              const Spacer(),
+              Text(_formatDuration(totals!['totalMinutes'] ?? 0), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+              const SizedBox(width: 4),
+              Text(' 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+            ]),
+          ),
+        ],
       ]),
     );
   }
