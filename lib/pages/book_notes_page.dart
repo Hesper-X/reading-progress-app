@@ -218,7 +218,11 @@ class _BookNotesPageState extends State<BookNotesPage> {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.home,
+                      (route) => false,
+                    );
                   },
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('新增打卡',
