@@ -1254,7 +1254,7 @@ class _ShareCheckinTop3 extends StatelessWidget {
         ...data.asMap().entries.map((entry) {
           final i = entry.key;
           final item = entry.value;
-          final medals = ['\U0001F947', '\U0001F948', '\U0001F949'];
+          final medals = ['🥇', '🥈', '🥉'];
           final totalMin = (item['total_minutes'] as num?)?.toInt() ?? 0;
           final checkinDays = (item['checkin_days'] as num?)?.toInt() ?? 0;
           final title = (item['title'] as String?) ?? '';
@@ -1276,28 +1276,11 @@ class _ShareCheckinTop3 extends StatelessWidget {
               ),
               Text(_formatDuration(totalMin), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(width: 4),
-              Text(' 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+              Text('$checkinDays 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
             ]),
           );
         }),
-        if (totals != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(children: [
-              Expanded(child: Container(height: 1, color: Colors.white.withValues(alpha: 0.15))),
-            ]),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(children: [
-              const Text('本周期合计', style: TextStyle(fontSize: 9, color: Colors.white54)),
-              const Spacer(),
-              Text(_formatDuration(totals!['totalMinutes'] ?? 0), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-              const SizedBox(width: 4),
-              Text(' 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
-            ]),
-          ),
-        ],
+
       ]),
     );
   }
