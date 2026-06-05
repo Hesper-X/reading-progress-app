@@ -1265,17 +1265,10 @@ class _ShareCheckinTop3 extends StatelessWidget {
               Text(medals[i], style: const TextStyle(fontSize: 11)),
               const SizedBox(width: 4),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('《$title》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    if (author.isNotEmpty)
-                      Text(author, style: const TextStyle(fontSize: 9, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
+                child: Text('《$title》', style: const TextStyle(fontSize: 10, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               Text(_formatDuration(totalMin), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(width: 4),
+              const Text(' · ', style: TextStyle(fontSize: 10, color: Colors.white54)),
               Text('$checkinDays 天', style: const TextStyle(fontSize: 9, color: Colors.white60)),
             ]),
           );
