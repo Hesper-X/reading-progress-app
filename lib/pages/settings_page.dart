@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_selector/file_selector.dart';
@@ -33,6 +34,8 @@ class _SettingsPageState extends State<SettingsPage> {
   int _goal = 50;
   bool _reminderEnabled = false;
   String _reminderTime = '21:00';
+  String? _purchaseStatus;
+  bool _isRestoring = false;
   @override
   void initState() {
     super.initState();
@@ -944,15 +947,7 @@ Future<void> _importData() async {
               icon: '💰',
               title: '恢复购买',
               subtitle: '已购买 Pro 功能',
-              onTap: () async {
-                final purchase = context.read<PurchaseProvider>();
-                await purchase.setPro(true);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('恢复成功')),
-                  );
-                }
-              },
+              onTap: _restorePurchase,
             ),
             _SettingCardData(
               icon: '⭐',
@@ -999,49 +994,114 @@ Future<void> _importData() async {
     );
   }
 
-  void _rateApp() {
-    // TODO: iOS → App Store 评分页 URL
-    // TODO: Android → Google Play / 应用商店评分页 URL
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('感谢你的支持！')),
-    );
+  /// 恢复购买（IAP 校验 + 加载状态）
+  Future<void> _restorePurchase() async {
+    if (_isRestoring) return;
+    setState(() {
+      _isRestoring = true;
+      _purchaseStatus = '正在恢复...';
+    });
+
+    try {
+      // Mock IAP 恢复（待 IAP 商品 ID 到位后替换为真实实现）
+      await Future.delayed(const Duration(seconds: 1));
+      final purchase = context.read<PurchaseProvider>();
+      await purchase.setPro(true);
+      final isPro = purchase.isPro;
+
+      if (!mounted) return;
+      if (isPro) {
+        setState(() => _purchaseStatus = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已恢复 Pro 权益')),
+        );
+      } else {
+        setState(() => _purchaseStatus = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('未找到购买记录')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _purchaseStatus = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('恢复失败，请重试')),
+      );
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
   }
 
-  void _showContactDialog() {
+  void _rateApp() async {
+    // iOS: App Store 评分页
+    if (Platform.isIOS) {
+      // 使用 App Store 完整 URL（包含 appId 占位）
+      const appStoreUrl = 'https://apps.apple.com/app/读书进度条/id0000000000?action=write-review';
+      if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
+        await launchUrl(Uri.parse(appStoreUrl), mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    // Android / HarmonyOS: 应用市场详情页
+    // 尝试华为应用市场
+    const huaweiUrl = 'appmarket://details?id=com.hespe.reading_progress';
+    if (await canLaunchUrl(Uri.parse(huaweiUrl))) {
+      await launchUrl(Uri.parse(huaweiUrl), mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    // 尝试 Google Play
+    const playUrl = 'market://details?id=com.hespe.reading_progress';
+    if (await canLaunchUrl(Uri.parse(playUrl))) {
+      await launchUrl(Uri.parse(playUrl), mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    // 兜底：引导弹窗
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('联系我们'),
+        title: const Text('支持我们'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('邮箱：${AppConstants.contactEmail}'),
+            Text('如果喜欢这个 App，请在'),
+            Text('App Store / 应用市场'),
+            Text('给我们 5 星好评 ⭐⭐⭐⭐⭐'),
             SizedBox(height: 8),
-            Text('欢迎发送问题反馈、功能建议或合作意向，我们会在 48 小时内回复。'),
+            Text('搜索「读书进度条」即可'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // TODO: 调用系统邮件客户端
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('邮件功能即将上线')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('发送邮件'),
+            child: const Text('我知道了'),
           ),
         ],
       ),
+    );
+  }
+
+  void _showContactDialog() async {
+    // 尝试调起系统邮件客户端
+    final mailtoUri = Uri(
+      scheme: 'mailto',
+      path: AppConstants.contactEmail,
+      queryParameters: {'subject': '读书进度条 - 用户反馈'},
+    );
+    if (await canLaunchUrl(mailtoUri)) {
+      await launchUrl(mailtoUri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    // 兜底：复制邮箱到剪贴板
+    if (!mounted) return;
+    await Clipboard.setData(ClipboardData(text: AppConstants.contactEmail));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('邮箱地址已复制')),
     );
   }
 
