@@ -478,8 +478,11 @@ class _DialogContainer extends StatelessWidget {
         ),
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + bottomInset),
-      child: SingleChildScrollView(
-        child: child,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          child: child,
+        ),
       ),
     );
   }
