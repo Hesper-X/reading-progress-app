@@ -273,7 +273,7 @@ class _ReadingTabState extends State<_ReadingTab> {
   @override
   Widget build(BuildContext context) {
     if (widget.books.isEmpty) {
-      return _emptyState(context, '还没有在读书籍', '在[首页]或者[书架]的[想读]清单，点击[开始阅读]后，\n它们会出现在这里');
+      return _emptyState(context, '还没有在读书籍', '在首页点击[+在读书籍]后，\n或者在书架页的想读清单，点击[开始阅读]后，\n它们会出现在这里');
     }
     final sorted = List<Book>.from(widget.books)
       ..sort((a, b) => (b.startDate).compareTo(a.startDate));
