@@ -5,6 +5,7 @@ import '../providers/books_provider.dart';
 import '../models/checkin.dart';
 import '../theme/colors.dart';
 import 'checkin_dialog.dart';
+import 'checkin_option_sheet.dart';
 
 /// 打卡日历组件（V3.5）
 /// 月视图 + 连续天数 + 点击日期弹出 Dialog
@@ -74,8 +75,8 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
 
     if (isToday) {
       if (isCheckedIn) {
-        // 今日已打卡 → 修改打卡 Dialog
-        _showUpdateDialog(provider, dateStr);
+        // 今日已打卡 → 选择浮层
+        _showOptionSheet(provider, dateStr);
       } else {
         // 今日未打卡 → 新建打卡 Dialog
         _showNewDialog(provider, dateStr);
@@ -89,7 +90,7 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
 
   // ============ Dialog 方法 ============
 
-  void _showNewDialog(CheckinProvider provider, String dateStr) {
+  void _showNewDialog(CheckinProvider provider, String dateStr, {int? initialBookId}) {
     final booksProvider = context.read<BooksProvider>();
     final readingBooks = booksProvider.readingBooks;
     showModalBottomSheet(
@@ -99,8 +100,8 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
       builder: (_) => CheckinNewDialog(
         dateStr: dateStr,
         readingBooks: readingBooks,
+        initialBookId: initialBookId,
         onSubmit: (bookId, durationMin, note) async {
-          Navigator.pop(context);
           final error = await provider.addCheckin(
             bookId: bookId,
             durationMin: durationMin,
@@ -116,31 +117,22 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
     );
   }
 
-  void _showUpdateDialog(CheckinProvider provider, String dateStr) {
-    final booksProvider = context.read<BooksProvider>();
-    final readingBooks = booksProvider.readingBooks;
+  void _showOptionSheet(CheckinProvider provider, String dateStr) {
     final lastCheckin = provider.lastCheckin;
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CheckinUpdateDialog(
+      builder: (_) => CheckinOptionSheet(
         dateStr: dateStr,
-        readingBooks: readingBooks,
-        lastCheckin: lastCheckin,
-        onSubmit: (bookId, durationMin, note) async {
-          Navigator.pop(context);
-          final error = await provider.updateCheckin(
-            bookId: bookId,
-            durationMin: durationMin,
-            note: note,
-          );
-          if (error == null) {
-            _showToast('打卡已更新 📝');
-          } else {
-            _showToast(error);
-          }
+        onNewCheckin: () {
+          Navigator.pop(context); // close option sheet
+          _showNewDialog(provider, dateStr,
+              initialBookId: lastCheckin?.bookId);
+        },
+        onViewDetail: () {
+          Navigator.pop(context); // close option sheet
+          _showDetailDialog(provider, dateStr);
         },
       ),
     );

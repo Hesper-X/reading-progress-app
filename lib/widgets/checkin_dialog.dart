@@ -7,10 +7,11 @@ import '../theme/colors.dart';
 // Dialog 1：新建打卡（点击今日·未打卡）
 // ============================================================
 
-/// 新建打卡 Dialog
+/// 新建打卡 Dialog（V3.5 变更十二统一用于新建和新增打卡）
 class CheckinNewDialog extends StatefulWidget {
   final String dateStr;
   final List<Book> readingBooks;
+  final int? initialBookId; // 从选择浮层进入时预选上次打卡书籍
   final Future<void> Function(int bookId, int? durationMin, String? note)
       onSubmit;
 
@@ -18,6 +19,7 @@ class CheckinNewDialog extends StatefulWidget {
     super.key,
     required this.dateStr,
     required this.readingBooks,
+    this.initialBookId,
     required this.onSubmit,
   });
 
@@ -32,6 +34,15 @@ class _CheckinNewDialogState extends State<CheckinNewDialog> {
   final _noteController = TextEditingController();
   final _noteFocusNode = FocusNode();
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 从选择浮层进入时，预选上次打卡的书籍
+    if (widget.initialBookId != null) {
+      _selectedBookId = widget.initialBookId;
+    }
+  }
 
   @override
   void dispose() {
@@ -55,6 +66,9 @@ class _CheckinNewDialogState extends State<CheckinNewDialog> {
           ? _noteController.text.trim()
           : null,
     );
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 
   // 格式化日期显示
@@ -134,199 +148,6 @@ class _CheckinNewDialogState extends State<CheckinNewDialog> {
                     )
                   : const Text(
                       '☀️ 打卡',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// Dialog 2：更新打卡（点击今日·已打卡）
-// ============================================================
-
-class CheckinUpdateDialog extends StatefulWidget {
-  final String dateStr;
-  final List<Book> readingBooks;
-  final CheckinDetail? lastCheckin;
-  final Future<void> Function(int bookId, int? durationMin, String? note)
-      onSubmit;
-
-  const CheckinUpdateDialog({
-    super.key,
-    required this.dateStr,
-    required this.readingBooks,
-    this.lastCheckin,
-    required this.onSubmit,
-  });
-
-  @override
-  State<CheckinUpdateDialog> createState() => _CheckinUpdateDialogState();
-}
-
-class _CheckinUpdateDialogState extends State<CheckinUpdateDialog> {
-  int? _selectedBookId;
-  int? _selectedHour;
-  int _selectedMinute = 0;
-  final _noteController = TextEditingController();
-  bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // 保留上次打卡的输入
-    if (widget.lastCheckin != null) {
-      _selectedBookId = widget.lastCheckin!.bookId;
-      final total = widget.lastCheckin!.durationMin ?? 0;
-      _selectedHour = total ~/ 60;
-      // 小时下拉items从null开始，0小时用null表示
-      if (_selectedHour == 0) _selectedHour = null;
-      _selectedMinute = total % 60;
-      // 分钟下拉步长为5，把非5倍数的值就近取整
-      _selectedMinute = (_selectedMinute ~/ 5) * 5;
-      if (widget.lastCheckin!.note != null) {
-        _noteController.text = widget.lastCheckin!.note!;
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  bool get _canSubmit => _selectedBookId != null && !_isSubmitting;
-
-  String _formatDate(String dateStr) {
-    final parts = dateStr.split('-');
-    if (parts.length != 3) return dateStr;
-    return '${int.parse(parts[0])}年${int.parse(parts[1])}月${int.parse(parts[2])}日';
-  }
-
-  Future<void> _submit() async {
-    if (!_canSubmit) return;
-    setState(() => _isSubmitting = true);
-
-    final totalMin = (_selectedHour ?? 0) * 60 + _selectedMinute;
-    await widget.onSubmit(
-      _selectedBookId!,
-      totalMin > 0 ? totalMin : null,
-      _noteController.text.trim().isNotEmpty
-          ? _noteController.text.trim()
-          : null,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 已有记录提示文字
-    String existingHint = '';
-    if (widget.lastCheckin != null &&
-        widget.lastCheckin!.durationMin != null &&
-        widget.lastCheckin!.durationMin! > 0) {
-      final lastTotal = widget.lastCheckin!.durationMin!;
-      final h = lastTotal ~/ 60;
-      final m = lastTotal % 60;
-      if (h > 0 && m > 0) {
-        existingHint = '已有记录: ${h}小时${m}分钟(已累积)，点击更新将追加新记录';
-      } else if (h > 0) {
-        existingHint = '已有记录: ${h}小时(已累积)，点击更新将追加新记录';
-      } else {
-        existingHint = '已有记录: ${m}分钟(已累积)，点击更新将追加新记录';
-      }
-    } else if (widget.lastCheckin != null &&
-        widget.lastCheckin!.note != null &&
-        widget.lastCheckin!.note!.isNotEmpty) {
-      existingHint = '已有笔记记录，点击更新将追加新记录';
-    }
-
-    return _DialogContainer(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 标题栏
-          _DialogTitle(
-            title: '☀️ 更新打卡',
-            dateSubtitle: '${_formatDate(widget.dateStr)} · 已打卡',
-            onClose: () => Navigator.pop(context),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 在读书籍下拉
-          _BookSelector(
-            books: widget.readingBooks,
-            selectedBookId: _selectedBookId,
-            onChanged: (id) => setState(() => _selectedBookId = id),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 阅读时长双下拉
-          _DurationSelector(
-            selectedHour: _selectedHour,
-            selectedMinute: _selectedMinute,
-            onHourChanged: (h) => setState(() => _selectedHour = h),
-            onMinuteChanged: (m) => setState(() => _selectedMinute = m),
-          ),
-
-          if (existingHint.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              existingHint,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-
-          // 笔记输入框
-          _NoteInput(
-            controller: _noteController,
-            focusNode: null,
-          ),
-
-          const SizedBox(height: 16),
-
-          // 提交按钮
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton(
-              onPressed: _canSubmit ? _submit : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.border,
-                disabledForegroundColor: Colors.white70,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(21),
-                ),
-              ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      '☀️ 更新打卡',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
