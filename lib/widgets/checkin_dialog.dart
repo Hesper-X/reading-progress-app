@@ -420,60 +420,70 @@ class _BookSelector extends StatelessWidget {
         const SizedBox(height: 6),
         GestureDetector(
           onTap: () {
-            // DropdownButton 在 BottomSheet 内无法正常弹出，使用 showDialog 全屏选择器
-            showDialog<int>(
+            // DropdownButton/SimpleDialog 在 BottomSheet 内体验不佳，
+            // 使用二级 BottomSheet 弹出书籍选择列表
+            showModalBottomSheet<int>(
               context: context,
-              builder: (ctx) => SimpleDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              backgroundColor: Colors.transparent,
+              builder: (ctx) => Container(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                title: const Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('📖', style: TextStyle(fontSize: 16)),
-                    SizedBox(width: 6),
-                    Text(
-                      '选择在读书籍',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    const Text(
+                      '📖  选择在读书籍',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    ...books.map((book) => Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: selectedBookId == book.id
+                            ? Color(0xFFFFF0F0)
+                            : Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () => Navigator.pop(ctx, book.id),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              Text('📖', style: const TextStyle(fontSize: 16)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  book.title,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: selectedBookId == book.id
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (selectedBookId == book.id)
+                                const Icon(Icons.check,
+                                    color: AppColors.primary, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )),
                   ],
                 ),
-                children: books.map((book) {
-                  return SimpleDialogOption(
-                    onPressed: () {
-                      Navigator.pop(ctx, book.id);
-                    },
-                    child: Row(
-                      children: [
-                        Text(
-                          '📖',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: selectedBookId == book.id
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            book.title,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: selectedBookId == book.id
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: selectedBookId == book.id
-                                  ? AppColors.primary
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (selectedBookId == book.id)
-                          const Icon(Icons.check, color: AppColors.primary, size: 20),
-                      ],
-                    ),
-                  );
-                }).toList(),
               ),
             ).then((value) {
               if (value != null) {
