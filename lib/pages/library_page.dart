@@ -128,7 +128,7 @@ class _WishTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (books.isEmpty) {
-      return _emptyState(context, '还没有想读的书', '点击首页 [+读书清单] 添加想读的书');
+      return _emptyState(context, '还没有想读的书', '点击首页 [+想读书籍] 添加想读的书');
     }
     final sorted = List<Book>.from(books)
       ..sort((a, b) => (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000)));
