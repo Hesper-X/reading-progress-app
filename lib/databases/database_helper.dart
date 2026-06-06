@@ -7,7 +7,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _dbName = 'reading_progress.db';
-  static const int _dbVersion = 4; // V3.5: version 4 (checkin_details)
+  static const int _dbVersion = 5; // V3.5: version 5 (fix: checkin_details in _onCreate)
 
   DatabaseHelper._init();
 
@@ -85,6 +85,21 @@ class DatabaseHelper {
     final year = DateTime.now().year;
     await db.execute(
         "INSERT OR IGNORE INTO year_goals (year, target, is_set_by_user) VALUES ($year, 0, 0)");
+
+    // V3.5: checkin_details 表（确保全新安装也有此表）
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS checkin_details (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        checkin_date TEXT NOT NULL,
+        duration_min INTEGER,
+        note TEXT,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (book_id) REFERENCES books(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_checkin_book_date ON checkin_details(book_id, checkin_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_checkin_date ON checkin_details(checkin_date)');
   }
 
   /// 数据库迁移
@@ -108,6 +123,11 @@ class DatabaseHelper {
 
     if (oldVersion < 4) {
       // V3.0 → V3.5: 新增打卡表
+      await _upgradeV3ToV4(db);
+    }
+
+    if (oldVersion < 5) {
+      // V3.5: 补建 checkin_details（修复全新安装缺失问题）
       await _upgradeV3ToV4(db);
     }
   }
