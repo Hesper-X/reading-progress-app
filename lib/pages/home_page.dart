@@ -256,7 +256,33 @@ class _HomePageState extends State<HomePage> {
                     _GoalRow(provider: provider, goal: goal),
                     const SizedBox(height: 20),
                     const CheckinCalendar(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    // 打卡操作提示
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '1. 点击当前日期，可多次打卡',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFFADB5BD),
+                              height: 1.6,
+                            ),
+                          ),
+                          Text(
+                            '2. 点击历史日期，可查看历史打卡记录',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFFADB5BD),
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     // V3.0：庆祝横幅文案改为目标达成→分享Tab
               if (_shareEntryShown)
                 Padding(
