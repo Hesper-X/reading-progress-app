@@ -5,7 +5,7 @@ import '../repositories/settings_repository.dart';
 class SettingsProvider with ChangeNotifier {
   final SettingsRepository _repository;
 
-  int _yearlyGoal = 50;
+  int _yearlyGoal = 0;
   String _theme = 'light';
   bool _dailyReminder = false;
   String _reminderTime = '21:00';
