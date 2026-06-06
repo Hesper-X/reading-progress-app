@@ -15,7 +15,6 @@ class BooksProvider with ChangeNotifier {
   List<Book> _wishBooks = [];
   List<Book> _readingBooks = [];
   List<Book> _doneBooks = [];
-  int _yearlyGoal = 0;
   bool _isLoading = false;
   String? _error;
 
@@ -38,7 +37,6 @@ class BooksProvider with ChangeNotifier {
   List<Book> get wishBooks => _wishBooks;
   List<Book> get readingBooks => _readingBooks;
   List<Book> get doneBooks => _doneBooks;
-  int get yearlyGoal => _yearlyGoal;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -55,9 +53,9 @@ class BooksProvider with ChangeNotifier {
   int get currentYearCount =>
       _doneBooks.where((b) => b.readDate?.year == DateTime.now().year).length;
 
-  /// 当前年度进度（0.0 ~ 1.0）
-  double get progress =>
-      _yearlyGoal > 0 ? (currentYearCount / _yearlyGoal).clamp(0.0, 1.0) : 0.0;
+  /// 当前年度进度（0.0 ~ 1.0），需要外部传 yearlyGoal
+  double progressWithGoal(int yearlyGoal) =>
+      yearlyGoal > 0 ? (currentYearCount / yearlyGoal).clamp(0.0, 1.0) : 0.0;
 
   /// 当前在读数量
   int get readingCount => _readingBooks.length;
@@ -83,7 +81,6 @@ class BooksProvider with ChangeNotifier {
       _wishBooks = await _repository.getWishBooks();
       _readingBooks = await _repository.getReadingBooks();
       _doneBooks = await _repository.getDoneBooks();
-      _yearlyGoal = await _settingsRepository.getYearlyGoal();
 
       _refreshCelebrationStatus();
       _isLoading = false;
@@ -95,8 +92,25 @@ class BooksProvider with ChangeNotifier {
     }
   }
 
-  void _refreshCelebrationStatus() {
-    final isGoalMet = currentYearCount >= _yearlyGoal && _yearlyGoal > 0;
+  void _refreshCelebrationStatus() async {
+    // 从数据库读取年度目标（不依赖 SettingsProvider）
+    try {
+      final goal = await _settingsRepository.getYearlyGoal();
+      final isGoalMet = currentYearCount >= goal && goal > 0;
+      if (isGoalMet != _celebrationAchieved) {
+        if (isGoalMet) {
+          _celebrationAchieved = true;
+          _celebrationTriggered = false;
+          _shareButtonClicked = false;
+          _celebrationDate = _todayStr();
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// 外部触发庆祝（根据 SettingsProvider.yearlyGoal）
+  void triggerCelebrationIfNeeded(int yearlyGoal) {
+    final isGoalMet = currentYearCount >= yearlyGoal && yearlyGoal > 0;
     if (isGoalMet != _celebrationAchieved) {
       if (isGoalMet) {
         _celebrationAchieved = true;
@@ -280,12 +294,9 @@ class BooksProvider with ChangeNotifier {
     }
   }
 
-  /// 更新年度目标
+  /// 更新年度目标（已废弃，由 SettingsProvider 统一管理）
   Future<void> updateYearlyGoal(int goal) async {
-    await _settingsRepository.setYearlyGoal(goal);
-    _yearlyGoal = goal;
     resetCelebrationStatus();
-    _refreshCelebrationStatus();
     notifyListeners();
   }
 

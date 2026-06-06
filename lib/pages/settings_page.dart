@@ -166,7 +166,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (result != null && result > 0 && mounted) {
       await context.read<SettingsProvider>().setYearlyGoal(result);
-      await context.read<BooksProvider>().updateYearlyGoal(result);
+      context.read<BooksProvider>().resetCelebrationStatus();
       setState(() => _goal = result);
 
       // 降低目标后检测是否达标

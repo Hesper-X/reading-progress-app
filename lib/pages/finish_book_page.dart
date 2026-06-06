@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
@@ -129,8 +130,10 @@ class _FinishBookPageState extends State<FinishBookPage> {
             if (!mounted) return;
 
             final provider = context.read<BooksProvider>();
-            final isGoalMet = provider.currentYearCount >= provider.yearlyGoal &&
-                provider.yearlyGoal > 0;
+            final settings = context.read<SettingsProvider>();
+            final goal = settings.yearlyGoal;
+            final isGoalMet = provider.currentYearCount >= goal &&
+                goal > 0;
 
             if (isGoalMet && !provider.celebrationTriggered) {
               Navigator.pushNamedAndRemoveUntil(

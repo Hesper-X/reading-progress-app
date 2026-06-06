@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../providers/books_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/colors.dart';
 import 'confetti_painter.dart';
 
@@ -43,8 +44,9 @@ class CelebrationHelper {
 
   static Future<void> _doShare(BuildContext context) async {
     final provider = context.read<BooksProvider>();
+    final settings = context.read<SettingsProvider>();
     final count = provider.currentYearCount;
-    final goal = provider.yearlyGoal;
+    final goal = settings.yearlyGoal;
     final year = DateTime.now().year;
 
     provider.markShareClicked();

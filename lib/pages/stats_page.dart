@@ -5,6 +5,7 @@ import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
 import '../providers/checkin_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../databases/database_helper.dart';
@@ -97,7 +98,7 @@ class StatsPage extends StatelessWidget {
                   currentMonthCount: currentMonthCount,
                   diff: diff,
                   yearTotal: scopeList.length,
-                  yearlyGoal: booksProvider.yearlyGoal,
+                  yearlyGoal: context.read<SettingsProvider>().yearlyGoal,
                   selectedYear: filter.selectedYear,
                   selectedMonth: filter.selectedMonth,
                   onYearTap: () => _showYearPicker(context, filterProvider, doneBooks),

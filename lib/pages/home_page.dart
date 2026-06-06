@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/book.dart';
 import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/colors.dart';
 import '../routes/app_routes.dart';
 import '../widgets/book_cover.dart';
@@ -229,8 +230,9 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: Consumer<BooksProvider>(
-        builder: (context, provider, _) {
+      body: Consumer2<BooksProvider, SettingsProvider>(
+        builder: (context, provider, settingsProvider, _) {
+          final goal = settingsProvider.yearlyGoal;
           final showCelebration =
               provider.celebrationAchieved &&
               !provider.celebrationTriggered &&
@@ -247,11 +249,11 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     const SizedBox(height: 24),
                     Center(
-                      child: CircularProgress(progress: provider.progress),
+                      child: CircularProgress(progress: provider.progressWithGoal(goal)),
                     ),
                     const SizedBox(height: 12),
                     // V3.0 设计：目标/已读/在读/想读 四数字行
-                    _GoalRow(provider: provider),
+                    _GoalRow(provider: provider, goal: goal),
                     const SizedBox(height: 20),
                     const CheckinCalendar(),
                     const SizedBox(height: 24),
@@ -308,8 +310,9 @@ class _HomePageState extends State<HomePage> {
 /// 目标/已读/在读/想读 四数字行
 class _GoalRow extends StatelessWidget {
   final BooksProvider provider;
+  final int goal;
 
-  const _GoalRow({required this.provider});
+  const _GoalRow({required this.provider, required this.goal});
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +320,7 @@ class _GoalRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _GoalItem(num: '${provider.yearlyGoal}', label: '目标'),
+          _GoalItem(num: '$goal', label: '目标'),
           const SizedBox(width: 32),
           _GoalItem(num: '${provider.currentYearCount}', label: '已读'),
           const SizedBox(width: 32),
@@ -707,8 +710,9 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
 
   Future<void> _doShare(BuildContext context) async {
     final provider = context.read<BooksProvider>();
+    final settings = context.read<SettingsProvider>();
     final count = provider.currentYearCount;
-    final goal = provider.yearlyGoal;
+    final goal = settings.yearlyGoal;
     final year = DateTime.now().year;
     provider.markShareClicked();
     try {

@@ -11,6 +11,7 @@ import '../models/book.dart';
 import '../models/filter_state.dart';
 import '../providers/books_provider.dart';
 import '../providers/filter_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
 import '../databases/database_helper.dart';
@@ -408,7 +409,7 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
       }
       scopeList = scopeBooks.toList();
       readCount = scopeList.length;
-      totalCount = booksProvider.yearlyGoal;
+      totalCount = context.read<SettingsProvider>().yearlyGoal;
       progress = totalCount > 0 ? (readCount / totalCount).clamp(0.0, 1.0) : 0.0;
       isCelebration = _isCurrentYear && month == null && readCount >= totalCount && totalCount > 0;
     }
