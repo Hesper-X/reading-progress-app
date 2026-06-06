@@ -18,6 +18,11 @@ android {
 
         // flutter_local_notifications 需要 core library desugaring
         multiDexEnabled = true
+
+        // V3.5 OCR: ML Kit 只打 arm64-v8a（真机架构），模拟器 x86 翻不了
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     compileOptions {
@@ -31,9 +36,24 @@ android {
     }
 
     buildTypes {
+        debug {
+            // V3.5 OCR 大体积 native lib 打包时禁用压缩避免 OOM
+            isCrunchPngs = false
+        }
         release {
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        // 排除 Vulkan 验证层（debug 仅用于开发，真机不需要）
+        exclude("/lib/arm64-v8a/libVkLayer_khronos_validation.so")
+        exclude("/lib/armeabi-v7a/libVkLayer_khronos_validation.so")
+        exclude("/lib/x86/libVkLayer_khronos_validation.so")
+        exclude("/lib/x86_64/libVkLayer_khronos_validation.so")
     }
 }
 

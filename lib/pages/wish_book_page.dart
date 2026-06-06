@@ -1,6 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart'
+    hide InputImageRotation;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/books_provider.dart';
@@ -113,7 +114,7 @@ class _WishBookPageState extends State<WishBookPage> {
     }
   }
 
-  // ============ V3.5 OCR 拍照取书名 ============
+  // ============ V3.5 OCR 拍照取书名（本地 ML Kit） ============
 
   Future<void> _takePhotoForOcr() async {
     try {
@@ -124,8 +125,8 @@ class _WishBookPageState extends State<WishBookPage> {
       );
       if (photo == null) return;
 
-      // 用拍照的图片进行 OCR 识别
-      final result = await _ocrImage(File(photo.path));
+      // 用拍照的图片进行本地 OCR 识别
+      final result = await _localOcr(File(photo.path));
 
       if (!mounted) return;
 
@@ -145,64 +146,29 @@ class _WishBookPageState extends State<WishBookPage> {
     }
   }
 
-  /// OCR 识别图片中的文字
-  /// 当前使用百度 OCR API（需要替换为本地 OCR 方案）
-  /// TODO: 替换为移动端本地 OCR（iOS Vision / Android ML Kit）
-  Future<String?> _ocrImage(File imageFile) async {
+  /// 本地 OCR 识别（Google ML Kit Text Recognition）
+  /// 纯本地运行，图片不离开设备
+  Future<String?> _localOcr(File imageFile) async {
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
-      // 尝试使用 API 识别
-      return await _baiduOcr(imageFile);
-    } catch (_) {
-      return null;
-    }
-  }
+      final inputImage = InputImage.fromFile(imageFile);
+      final recognizedText = await textRecognizer.processImage(inputImage);
+      final blocks = recognizedText.blocks;
 
-  /// 百度 OCR API（通用文字识别）
-  Future<String?> _baiduOcr(File imageFile) async {
-    // TODO: 上架前替换为真实 API Key
-    // 注册百度智能云 OCR 获取 API Key 和 Secret Key
-    // https://console.bce.baidu.com/ai/#/ai/ocr/overview/index
-    const apiKey = '';
-    const secretKey = '';
-    if (apiKey.isEmpty || secretKey.isEmpty) return null;
+      if (blocks.isEmpty) return null;
 
-    final httpClient = HttpClient();
-    try {
-      // 1. 获取 access_token
-      final tokenUrl = Uri.parse(
-        'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$apiKey&client_secret=$secretKey');
-      final tokenReq = await httpClient.getUrl(tokenUrl);
-      final tokenResp = await tokenReq.close();
-      final tokenBody = await tokenResp.transform(utf8.decoder).join();
-      final tokenJson = jsonDecode(tokenBody);
-      final accessToken = tokenJson['access_token'] as String?;
-      if (accessToken == null) return null;
-
-      // 2. 调用通用文字识别
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
-
-      final ocrUrl = Uri.parse(
-          'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=$accessToken');
-      final ocrReq = await httpClient.postUrl(ocrUrl);
-      ocrReq.headers.set('Content-Type', 'application/x-www-form-urlencoded');
-      ocrReq.write('image=' + Uri.encodeQueryComponent(base64Image));
-      final ocrResp = await ocrReq.close();
-      final ocrBody = await ocrResp.transform(utf8.decoder).join();
-      final ocrJson = jsonDecode(ocrBody);
-
-      final words = ocrJson['words_result'] as List?;
-      if (words == null || words.isEmpty) return null;
-
-      // 提取最可能的书名（取第一个结果或最长的文本行）
+      // 提取所有识别到的文本行，取最长文本作为最可能的书名
       String best = '';
-      for (final w in words) {
-        final text = w['words'] as String? ?? '';
-        if (text.length > best.length) best = text;
+      for (final block in blocks) {
+        for (final line in block.lines) {
+          if (line.text.length > best.length) {
+            best = line.text;
+          }
+        }
       }
-      return best.isNotEmpty ? best : null;
+      return best.isNotEmpty ? best.trim() : null;
     } finally {
-      httpClient.close();
+      textRecognizer.close();
     }
   }
 
