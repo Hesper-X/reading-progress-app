@@ -384,6 +384,8 @@ class _BookSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEmpty = books.isEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -413,17 +415,26 @@ class _BookSelector extends StatelessWidget {
         Container(
           height: 40,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border, width: 1.5),
+            border: Border.all(
+              color: isEmpty ? AppColors.border.withOpacity(0.5) : AppColors.border,
+              width: 1.5,
+            ),
             borderRadius: BorderRadius.circular(10),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
-              value: selectedBookId,
+              value: isEmpty ? null : selectedBookId,
               isExpanded: true,
-              hint: const Text(
-                '请选择在读书籍',
-                style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+              hint: Text(
+                isEmpty ? '暂无在读书籍，请先添加' : '请选择在读书籍',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isEmpty
+                      ? AppColors.textMuted.withOpacity(0.6)
+                      : AppColors.textMuted,
+                  fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+                ),
               ),
               items: books.map((book) {
                 return DropdownMenuItem(
@@ -435,7 +446,7 @@ class _BookSelector extends StatelessWidget {
                   ),
                 );
               }).toList(),
-              onChanged: onChanged,
+              onChanged: isEmpty ? null : onChanged,
             ),
           ),
         ),
