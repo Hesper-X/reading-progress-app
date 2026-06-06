@@ -384,14 +384,6 @@ class _BookSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 已选书籍名称
-    final selectedBook = selectedBookId != null
-        ? books.cast<Book?>().firstWhere(
-            (b) => b!.id == selectedBookId,
-            orElse: () => null,
-          )
-        : null;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -418,104 +410,32 @@ class _BookSelector extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        GestureDetector(
-          onTap: () {
-            // DropdownButton/SimpleDialog 在 BottomSheet 内体验不佳，
-            // 使用二级 BottomSheet 弹出书籍选择列表
-            showModalBottomSheet<int>(
-              context: context,
-              backgroundColor: Colors.transparent,
-              builder: (ctx) => Container(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '📖  选择在读书籍',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ...books.map((book) => Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: selectedBookId == book.id
-                            ? Color(0xFFFFF0F0)
-                            : Color(0xFFF8F9FA),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () => Navigator.pop(ctx, book.id),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          child: Row(
-                            children: [
-                              Text('📖', style: const TextStyle(fontSize: 16)),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  book.title,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: selectedBookId == book.id
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              if (selectedBookId == book.id)
-                                const Icon(Icons.check,
-                                    color: AppColors.primary, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )),
-                  ],
-                ),
+        Container(
+          height: 40,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: selectedBookId,
+              isExpanded: true,
+              hint: const Text(
+                '请选择在读书籍',
+                style: TextStyle(fontSize: 14, color: AppColors.textMuted),
               ),
-            ).then((value) {
-              if (value != null) {
-                onChanged(value);
-              }
-            });
-          },
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border, width: 1.5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Expanded(
+              items: books.map((book) {
+                return DropdownMenuItem(
+                  value: book.id,
                   child: Text(
-                    selectedBook != null
-                        ? '📖 ${selectedBook.title}'
-                        : '请选择在读书籍',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: selectedBook != null
-                          ? AppColors.textPrimary
-                          : AppColors.textMuted,
-                    ),
+                    '📖 ${book.title}',
+                    style: const TextStyle(fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary, size: 20),
-              ],
+                );
+              }).toList(),
+              onChanged: onChanged,
             ),
           ),
         ),
@@ -523,7 +443,6 @@ class _BookSelector extends StatelessWidget {
     );
   }
 }
-
 /// 阅读时长双下拉选择（小时 + 分钟）
 class _DurationSelector extends StatelessWidget {
   final int? selectedHour;
