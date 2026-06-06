@@ -384,6 +384,14 @@ class _BookSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 已选书籍名称
+    final selectedBook = selectedBookId != null
+        ? books.cast<Book?>().firstWhere(
+            (b) => b!.id == selectedBookId,
+            orElse: () => null,
+          )
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -410,32 +418,71 @@ class _BookSelector extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Container(
-          height: 40,
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border, width: 1.5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: selectedBookId,
-              isExpanded: true,
-              hint: const Text(
-                '请选择在读书籍',
-                style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+        GestureDetector(
+          onTap: () {
+            // DropdownButton 在 BottomSheet 内会被遮住，使用 showMenu 替代
+            final renderBox = context.findRenderObject() as RenderBox;
+            final offset = renderBox.localToGlobal(Offset.zero);
+            final position = RelativeRect.fromLTRB(
+              offset.dx,
+              offset.dy + renderBox.size.height + 4,
+              offset.dx + renderBox.size.width,
+              offset.dy + renderBox.size.height + 4,
+            );
+
+            showMenu<int>(
+              context: context,
+              position: position,
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
               items: books.map((book) {
-                return DropdownMenuItem(
+                return PopupMenuItem<int>(
                   value: book.id,
                   child: Text(
                     '📖 ${book.title}',
-                    style: const TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selectedBookId == book.id
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 );
               }).toList(),
-              onChanged: onChanged,
+            ).then((value) {
+              if (value != null) {
+                onChanged(value);
+              }
+            });
+          },
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.border, width: 1.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selectedBook != null
+                        ? '📖 ${selectedBook.title}'
+                        : '请选择在读书籍',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: selectedBook != null
+                          ? AppColors.textPrimary
+                          : AppColors.textMuted,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary, size: 20),
+              ],
             ),
           ),
         ),
