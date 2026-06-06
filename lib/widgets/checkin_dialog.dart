@@ -420,38 +420,61 @@ class _BookSelector extends StatelessWidget {
         const SizedBox(height: 6),
         GestureDetector(
           onTap: () {
-            // DropdownButton 在 BottomSheet 内会被遮住，使用 showMenu 替代
-            final renderBox = context.findRenderObject() as RenderBox;
-            final offset = renderBox.localToGlobal(Offset.zero);
-            final position = RelativeRect.fromLTRB(
-              offset.dx,
-              offset.dy + renderBox.size.height + 4,
-              offset.dx + renderBox.size.width,
-              offset.dy + renderBox.size.height + 4,
-            );
-
-            showMenu<int>(
+            // DropdownButton 在 BottomSheet 内无法正常弹出，使用 showDialog 全屏选择器
+            showDialog<int>(
               context: context,
-              position: position,
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              items: books.map((book) {
-                return PopupMenuItem<int>(
-                  value: book.id,
-                  child: Text(
-                    '📖 ${book.title}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selectedBookId == book.id
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      color: AppColors.textPrimary,
+              builder: (ctx) => SimpleDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: const Row(
+                  children: [
+                    Text('📖', style: TextStyle(fontSize: 16)),
+                    SizedBox(width: 6),
+                    Text(
+                      '选择在读书籍',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                  ),
-                );
-              }).toList(),
+                  ],
+                ),
+                children: books.map((book) {
+                  return SimpleDialogOption(
+                    onPressed: () {
+                      Navigator.pop(ctx, book.id);
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          '📖',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: selectedBookId == book.id
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            book.title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: selectedBookId == book.id
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: selectedBookId == book.id
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (selectedBookId == book.id)
+                          const Icon(Icons.check, color: AppColors.primary, size: 20),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ).then((value) {
               if (value != null) {
                 onChanged(value);
