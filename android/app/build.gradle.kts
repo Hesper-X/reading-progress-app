@@ -42,6 +42,11 @@ android {
         }
         release {
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
@@ -60,6 +65,8 @@ android {
 dependencies {
     // flutter_local_notifications 需要 core library desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // V3.5 OCR: ML Kit 中文文字识别（R8 需要的显式依赖）
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
 }
 
 flutter {

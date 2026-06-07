@@ -149,7 +149,7 @@ class _WishBookPageState extends State<WishBookPage> {
   /// 本地 OCR 识别（Google ML Kit Text Recognition）
   /// 纯本地运行，图片不离开设备
   Future<String?> _localOcr(File imageFile) async {
-    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
     try {
       final inputImage = InputImage.fromFile(imageFile);
       final recognizedText = await textRecognizer.processImage(inputImage);

@@ -19,10 +19,10 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         mavenLocal()
-        maven { url = uri("https://mirrors.cloud.tencent.com/flutter/download.flutter.io") }
+        maven { url = uri("https://storage.flutter-io.cn") }
         google()
         mavenCentral()
     }
