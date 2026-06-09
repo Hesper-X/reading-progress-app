@@ -1143,47 +1143,21 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _legalAssetPath(String title) {
-    switch (title) {
-      case '用户协议': return 'assets/legal/user_agreement.html';
-      case '隐私政策': return 'assets/legal/privacy_policy.html';
-      case '个人信息收集清单': return 'assets/legal/personal_info_list.html';
-      case '第三方信息共享清单': return 'assets/legal/third_party_sharing.html';
-      case '开源许可': return 'assets/legal/open_source_licenses.html';
-      default: return 'assets/legal/user_agreement.html';
-    }
-  }
-
-  Future<void> _showLegalDialog(String title, String oldContent) async {
-    final assetPath = _legalAssetPath(title);
-    String html;
-    try {
-      html = await rootBundle.loadString(assetPath);
-    } catch (_) {
-      html = '<!DOCTYPE html><html><body><p>' + oldContent + '</p></body></html>';
-    }
-
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shape: const Border(
-              bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1),
-            ),
-            title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-          ),
-          body: _LegalHtmlBody(html: html),
-
+  /// V3.4 方式：直接以 AlertDialog 显示纯文本内容，不依赖 html 解析
+  void _showLegalDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Text(content, style: const TextStyle(fontSize: 13, height: 1.5)),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
       ),
     );
   }
