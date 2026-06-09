@@ -186,16 +186,21 @@ class _WishBookCard extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      // 将想读状态改为在读（不经过新建流程，避免触发达量限制）
-                      if (book.id == null) return;
-                      final provider = context.read<BooksProvider>();
-                      await provider.updateBook(
-                        bookId: book.id!,
-                        title: book.title,
-                        author: book.author,
-                        startDate: DateTime.now(),
-                        status: BookStatus.reading,
+                      // 跳转到「开始阅读」页面，让用户确认/补充封面、日期等
+                      // 传入 isFromWish=true 标识：该操作为想读→在读，跳过下容量检查
+                      final result = await Navigator.pushNamed(
+                        context,
+                        AppRoutes.add,
+                        arguments: {
+                          'title': book.title,
+                          'author': book.author,
+                          'isFromWish': true,
+                        },
                       );
+                      // 如果用户确实添加了在读（有结果返回），则删除想读记录
+                      if (result == true && book.id != null) {
+                        await context.read<BooksProvider>().deleteBook(book.id!);
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

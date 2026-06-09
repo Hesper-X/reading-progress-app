@@ -32,11 +32,12 @@ class RouteGenerator {
 
       case AppRoutes.add:
         final args = settings.arguments;
-        if (args is Map<String, String>) {
+        if (args is Map<String, dynamic>) {
           return MaterialPageRoute(
             builder: (_) => AddBookPage(
-              initialTitle: args['title'],
-              initialAuthor: args['author'],
+              initialTitle: args['title'] as String?,
+              initialAuthor: args['author'] as String?,
+              isFromWish: (args['isFromWish'] as bool?) ?? false,
             ),
           );
         }

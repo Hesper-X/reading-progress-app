@@ -17,8 +17,9 @@ class AddBookPage extends StatefulWidget {
   final String? initialTitle;
   final String? initialAuthor;
   final Book? editBook; // V3.2 编辑模式
+  final bool isFromWish; // V3.5：从想读页「开始阅读」跳转而来，跳过容量检查
 
-  const AddBookPage({super.key, this.initialTitle, this.initialAuthor, this.editBook});
+  const AddBookPage({super.key, this.initialTitle, this.initialAuthor, this.editBook, this.isFromWish = false});
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
@@ -170,6 +171,31 @@ class _AddBookPageState extends State<AddBookPage> {
           );
         }
       }
+    } else if (widget.isFromWish) {
+      // 从想读→在读跳转而来：直接保存，跳过容量检查
+      final success = await provider.addBook(
+        title: _titleController.text.trim(),
+        author: _authorController.text.trim().isEmpty
+            ? null
+            : _authorController.text.trim(),
+        coverPath: _coverPath,
+        startDate: _startDate,
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('《${_titleController.text.trim()}》已加入在读')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存失败，请重试')),
+          );
+        }
+      }
+      return;
     } else {
       // 新建模式：检查免费版限制
       final isPro = context.read<PurchaseProvider>().isPro;
