@@ -260,7 +260,7 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textMuted,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
