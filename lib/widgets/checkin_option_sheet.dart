@@ -47,7 +47,7 @@ class CheckinOptionSheet extends StatelessWidget {
           // 为该日新增打卡
           _OptionButton(
             icon: '📖',
-            label: '为该日新增打卡',
+            label: '新增打卡',
             onTap: onNewCheckin,
           ),
           const SizedBox(height: 8),
