@@ -11,6 +11,14 @@ import '../constants/app_constants.dart';
 import '../models/book.dart';
 import '../routes/app_routes.dart';
 
+// OCR 识别结果中的文字块数据
+/// 包含识别文本和原始图片上的坐标矩形
+class _OcrBlockData {
+  final String text;
+  final Rect boundingBox; // 原始图片坐标
+  _OcrBlockData({required this.text, required this.boundingBox});
+}
+
 /// 加入想读页 — 按设计稿 07 添加书籍.html「+ 读书清单」模式实现
 /// 仅含书名+作者，无封面/日期字段
 /// V3.2：新增 editBook 参数支持编辑模式
@@ -125,18 +133,19 @@ class _WishBookPageState extends State<WishBookPage> {
       );
       if (photo == null) return;
 
+      final imageFile = File(photo.path);
+
       // 用拍照的图片进行本地 OCR 识别
-      final result = await _localOcr(File(photo.path));
+      final result = await _localOcr(imageFile);
 
       if (!mounted) return;
 
-      if (result != null && result.isNotEmpty) {
-        _titleController.text = result;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('📖 已识别书名，请确认是否正确'),
-            duration: Duration(milliseconds: 2500),
-          ),
+      if (result != null && result.blocks.isNotEmpty) {
+        // 弹出确认弹窗让用户从照片上选择文字块
+        await _showOcrConfirmDialog(
+          photoFile: imageFile,
+          blocks: result.blocks,
+          imageSize: result.imageSize,
         );
       } else {
         _showOcrFailDialog();
@@ -146,9 +155,306 @@ class _WishBookPageState extends State<WishBookPage> {
     }
   }
 
+  /// 弹出 OCR 确认弹窗（照片上叠加半透明红框 → 点击选择 → 确认填入）
+  Future<void> _showOcrConfirmDialog({
+    required File photoFile,
+    required List<_OcrBlockData> blocks,
+    required Size imageSize,
+  }) async {
+    // 弹窗内选中的书名
+    String? selectedText;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 标题行
+                    Row(
+                      children: [
+                        const Text('📷', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text(
+                            '拍照取书名',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF212529),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: const Icon(Icons.close, size: 22, color: Color(0xFF868E96)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '点击图片上对应文字块 → 自动填入书名',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF868E96),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 照片区域 + OCR 红框叠加
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final displayWidth = constraints.maxWidth;
+                        // 按照片宽高比 + 容器宽度计算显示高度
+                        final photoAspect = imageSize.width / imageSize.height;
+                        final displayHeight = displayWidth / photoAspect;
+
+                        return Stack(
+                          children: [
+                            // 底层：照片
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                photoFile,
+                                width: displayWidth,
+                                height: displayHeight,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            // 上层：OCR 文字块红框
+                            ...blocks.map((block) {
+                              // 坐标从原始图片映射到显示尺寸
+                              final scaleX = displayWidth / imageSize.width;
+                              final scaleY = displayHeight / imageSize.height;
+                              final left = block.boundingBox.left * scaleX;
+                              final top = block.boundingBox.top * scaleY;
+                              final width = block.boundingBox.width * scaleX;
+                              final height = block.boundingBox.height * scaleY;
+
+                              // 该块是否被选中
+                              final isSelected = selectedText == block.text;
+
+                              return Positioned(
+                                left: left,
+                                top: top,
+                                width: width,
+                                height: height,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setDialogState(() {
+                                      selectedText = block.text;
+                                    });
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0x80FF6B6B)
+                                          : const Color(0x30FF6B6B),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFFFF5252)
+                                            : const Color(0xFFFF6B6B),
+                                        width: isSelected ? 2.5 : 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      block.text,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                        decoration: TextDecoration.none,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 书名输入框
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '书名',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF868E96),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: TextEditingController.fromValue(
+                        TextEditingValue(
+                          text: selectedText ?? '',
+                          selection: TextSelection.fromPosition(
+                            TextPosition(
+                              offset: (selectedText ?? '').length,
+                            ),
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          selectedText = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: '点击图片上的文字块选择书名',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFFADB5BD),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8F9FA),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDEE2E6),
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        suffixIcon: selectedText != null &&
+                                selectedText!.isNotEmpty
+                            ? GestureDetector(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedText = null;
+                                  });
+                                },
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: Color(0xFFADB5BD),
+                                ),
+                              )
+                            : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF212529),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // 底部按钮
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              // 重新拍照
+                              _takePhotoForOcr();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFDEE2E6),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '📷 重新拍照',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF868E96),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (selectedText == null ||
+                                  selectedText!.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('请点击图片上的文字块选择书名'),
+                                    duration: Duration(milliseconds: 1500),
+                                  ),
+                                );
+                                return;
+                              }
+                              // 确认填入书名
+                              _titleController.text = selectedText!.trim();
+                              Navigator.pop(ctx);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: const Color(0xFFFF6B6B),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF6B6B)
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '✅ 确认',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   /// 本地 OCR 识别（Google ML Kit Text Recognition）
   /// 纯本地运行，图片不离开设备
-  Future<String?> _localOcr(File imageFile) async {
+  /// 返回识别到的所有文字块 + 原始图片尺寸
+  Future<({List<_OcrBlockData> blocks, Size imageSize})?> _localOcr(
+      File imageFile) async {
     final textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
     try {
       final inputImage = InputImage.fromFile(imageFile);
@@ -157,16 +463,21 @@ class _WishBookPageState extends State<WishBookPage> {
 
       if (blocks.isEmpty) return null;
 
-      // 提取所有识别到的文本行，取最长文本作为最可能的书名
-      String best = '';
-      for (final block in blocks) {
-        for (final line in block.lines) {
-          if (line.text.length > best.length) {
-            best = line.text;
-          }
-        }
-      }
-      return best.isNotEmpty ? best.trim() : null;
+      // 提取所有文字块（文本 + 坐标）
+      final result = blocks
+          .expand((block) => block.lines)
+          .where((line) => line.text.trim().isNotEmpty)
+          .map((line) => _OcrBlockData(
+                text: line.text.trim(),
+                boundingBox: line.boundingBox,
+              ))
+          .toList();
+
+      if (result.isEmpty) return null;
+
+      // 获取图片实际尺寸
+      final decodedImage = await decodeImageFromList(await imageFile.readAsBytes());
+      return (blocks: result, imageSize: Size(decodedImage.width.toDouble(), decodedImage.height.toDouble()));
     } finally {
       textRecognizer.close();
     }
