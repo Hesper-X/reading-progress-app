@@ -38,28 +38,33 @@ class ReminderScheduler {
     return null; // 无在读书籍不推送
   }
 
-  /// 使用 schedule 实现持久每日定时（通过 AlarmManager）
+  /// 通过 zonedSchedule 实现持久每日定时（AlarmManager 级别）
+  ///
+  /// 使用本地时区 TZDateTime 构造目标时间，确保 matchDateTimeComponents.time
+  /// 提取正确的小时/分钟，避免 UTC 时区导致每日重复时偏差。
   Future<void> _zonedSchedule(String nextBody) async {
     await _notif.init();
 
-    // 确保时区数据已初始化（tz.TZDateTime.utc 需要）
+    // 确保时区数据已初始化
     tz_data.initializeTimeZones();
+    final local = tz.local;
 
     final settingsProvider = _lastSettings;
     if (settingsProvider == null) return;
 
-    // 用本地 DateTime 计算目标时间，避免时区偏差
-    final now = DateTime.now();
+    // 用本地时区 TZDateTime 计算目标时间
     final parts = settingsProvider.reminderTime.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
 
-    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    final now = tz.TZDateTime.now(local);
+    var scheduledDate = tz.TZDateTime(local, now.year, now.month, now.day, hour, minute);
+
     if (scheduledDate.isBefore(now) || scheduledDate.isAtSameMomentAs(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    debugPrint('[Reminder] 持久调度: ${scheduledDate.toString()} (${settingsProvider.reminderTime}), ts=${scheduledDate.millisecondsSinceEpoch}');
+    debugPrint('[Reminder] 持久调度: ${scheduledDate.toString()} (${settingsProvider.reminderTime}), ms=${scheduledDate.millisecondsSinceEpoch}');
 
     // 检测是否支持精确闹钟
     bool canScheduleExact = false;
@@ -76,19 +81,11 @@ class ReminderScheduler {
       debugPrint('[Reminder] 精确闹钟权限未授权，将使用非精确模式（可能延迟）');
     }
 
-    // 用 tz.local 时区构造 TZDateTime
-    // 将本地时间转为 UTC 日历时间，然后构造 UTC 时区的 TZDateTime
-    // 这样 millisecondsSinceEpoch 就是正确的 UTC 时间戳
-    final utcDt = scheduledDate.toUtc();
-    final utcDate = tz.TZDateTime.utc(utcDt.year, utcDt.month, utcDt.day, utcDt.hour, utcDt.minute);
-
-    debugPrint('[Reminder] local: ${scheduledDate.toString()}, toUtc: ${utcDt.toString()}, tz_utc:${utcDate.toString()}, ms=${utcDate.millisecondsSinceEpoch}');
-
     await _notif.platform.zonedSchedule(
       _notificationId,
       '阅读提醒',
       nextBody,
-      utcDate,
+      scheduledDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reading_reminder',
