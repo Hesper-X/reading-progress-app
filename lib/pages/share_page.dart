@@ -570,11 +570,11 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   widget.customText ?? '今年读的书，配得上你的野心吗？',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: widget.customText != null
-                        ? const Color(0xB3FFFFFF)
-                        : const Color(0x55FFFFFF),
-                  ),
+                  fontSize: 12,
+                  color: widget.customText != null
+                      ? const Color(0xF2FFFFFF)
+                      : const Color(0xD9FFFFFF),
+                ),
                 ),
 
                 // === 统计模块（分割线+容器，同高保真） ===
@@ -601,11 +601,11 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                 // === 品牌水印（无分割线） ===
                 const SizedBox(height: 6),
                 const Text('来自读书进度条 App',
-                    style: TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                    style: TextStyle(fontSize: 12, color: Color(0xE0FFFFFF))),
                 const SizedBox(height: 4),
                 const Text(
                   '把你读完的书，变成一种生命的进度',
-                  style: TextStyle(fontSize: 11, color: Color(0x8CFFFFFF)),
+                  style: TextStyle(fontSize: 11, color: Color(0xD9FFFFFF)),
                 ),
               ],
             ),
