@@ -212,37 +212,43 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
                     ),
                   ],
                   const Spacer(),
-                  GestureDetector(
-                    onTap: () => provider.goToPrevMonth(),
-                    child: const Text(
-                      '‹',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () => provider.goToPrevMonth(),
+                        child: const Text(
+                          '‹',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    provider.monthLabel,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => provider.goToNextMonth(),
-                    child: const Text(
-                      '›',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                      const SizedBox(width: 12),
+                      Text(
+                        provider.monthLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () => provider.goToNextMonth(),
+                        child: const Text(
+                          '›',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

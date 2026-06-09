@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
+    <!-- 阶段1（LaunchTheme）：Android Activity 刚启动时，Flutter 引擎尚未就绪 -->
+    <!-- 纯白色背景，等 Flutter 引擎渲染 SplashPage -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Show a splash screen on the activity. Automatically removed when
-             the Flutter engine draws its first frame -->
-        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
-    <!-- Theme applied to the Android Window as soon as the process has started.
-         This theme determines the color of the Android Window while your
-         Flutter UI initializes, as well as behind your Flutter UI while its
-         running.
-
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+    <!-- 阶段2（NormalTheme）：Flutter 引擎已创建但尚未完成首帧渲染 -->
+    <!-- 同样纯白色，避免 bitmap 拉伸导致的画面模糊 -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- 保持与 SplashPage 背景一致，消除原生→Flutter 切换时的白色闪烁 -->
-        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
 </resources>
