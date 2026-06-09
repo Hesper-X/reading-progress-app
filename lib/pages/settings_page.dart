@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:sqflite/sqflite.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/purchase_provider.dart';
 import '../repositories/book_repository.dart';
 import '../repositories/settings_repository.dart';
+import '../repositories/checkin_repository.dart';
+import '../models/checkin.dart';
 import '../databases/database_helper.dart';
 import '../theme/colors.dart';
 import '../constants/app_constants.dart';
@@ -247,12 +250,20 @@ class _SettingsPageState extends State<SettingsPage> {
       final db = DatabaseHelper.instance;
       final repo = BookRepository(db);
       final settingsRepo = SettingsRepository(db);
+      final checkinRepo = CheckinRepository(db);
 
       // 获取所有书籍（不含已放弃）
       final allBooks = await repo.getAll();
 
       // 获取设置
       final settings = await settingsRepo.getAll();
+
+      // V3.5: 获取打卡记录
+      final allCheckins = await checkinRepo.getAllCheckins();
+
+      // 获取年度目标
+      final database = await db.database;
+      final allYearGoals = await database.query('year_goals');
 
       // 构建导出 JSON
       final exportData = {
@@ -271,6 +282,8 @@ class _SettingsPageState extends State<SettingsPage> {
           'startDate': b.startDate.toIso8601String(),
           if (b.readCount > 1) 'readCount': b.readCount,
         }).toList(),
+        'checkins': allCheckins.map((c) => c.toMap()).toList(),
+        'yearGoals': allYearGoals,
         'settings': settings,
       };
 
@@ -311,20 +324,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // ============ V3.4 导入数据 ============
 
-Future<void> _importData() async {
-  try {
-    const typeGroup = XTypeGroup(
-      label: 'JSON',
-      extensions: ['json'],
-    );
-    final result = await openFile(
-      acceptedTypeGroups: [typeGroup],
-    );
+  Future<void> _importData() async {
+    try {
+      const typeGroup = XTypeGroup(
+        label: 'JSON',
+        extensions: ['json'],
+      );
+      final result = await openFile(
+        acceptedTypeGroups: [typeGroup],
+      );
 
-    if (result == null) return;
+      if (result == null) return;
 
-    final file = File(result.path);
-    if (!await file.exists()) return;
+      final file = File(result.path);
       if (!await file.exists()) return;
 
       final content = await file.readAsString();
@@ -369,7 +381,7 @@ Future<void> _importData() async {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('导入数据'),
-          content: Text('将导入 ${booksList.length} 本书籍记录，继续吗？'),
+          content: Text('将导入 ${booksList.length} 本书籍记录${data['checkins'] != null ? '，${(data['checkins'] as List).length} 条打卡记录' : ''}，继续吗？'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -452,12 +464,38 @@ Future<void> _importData() async {
         }
       });
 
+      // 导入打卡记录
+      final importedCheckins = data['checkins'] as List?;
+      if (importedCheckins != null && importedCheckins.isNotEmpty) {
+        final checkinRepo = CheckinRepository(db);
+        for (final item in importedCheckins) {
+          final checkinMap = item as Map<String, dynamic>;
+          if (checkinMap['book_id'] != null) {
+            await checkinRepo.addCheckin(CheckinDetail.fromMap(checkinMap));
+          }
+        }
+      }
+
+      // 导入年度目标
+      final importedYearGoals = data['yearGoals'] as List?;
+      if (importedYearGoals != null && importedYearGoals.isNotEmpty) {
+        for (final item in importedYearGoals) {
+          final goalMap = item as Map<String, dynamic>;
+          await database.insert(
+            'year_goals',
+            goalMap,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
       // 刷新数据
       await booksProvider.loadBooks();
 
       if (mounted) {
+        final checkinCount = importedCheckins?.length ?? 0;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导入成功！已恢复 $imported 本书籍记录${skipped > 0 ? '，跳过 $skipped 条重复记录' : ''}')),
+          SnackBar(content: Text('导入成功！已恢复 $imported 本书籍记录${skipped > 0 ? '，跳过 $skipped 条重复记录' : ''}，$checkinCount 条打卡记录')),
         );
       }
     } catch (e) {

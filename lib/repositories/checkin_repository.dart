@@ -226,6 +226,18 @@ class CheckinRepository {
     return result.map((m) => CheckinDetail.fromMap(m)).toList();
   }
 
+  // ============ 全量导出 ============
+
+  /// 获取所有打卡记录（按日期和创建时间排序，用于导出）
+  Future<List<CheckinDetail>> getAllCheckins() async {
+    final db = await _db.database;
+    final result = await db.query(
+      'checkin_details',
+      orderBy: 'checkin_date ASC, created_at ASC',
+    );
+    return result.map((m) => CheckinDetail.fromMap(m)).toList();
+  }
+
   // ============ 连续天数计算 ============
 
   /// 计算截至某天的连续打卡天数
