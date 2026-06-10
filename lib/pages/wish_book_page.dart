@@ -182,8 +182,11 @@ class _WishBookPageState extends State<WishBookPage> {
             // 监听键盘高度，键盘弹起时弹窗底部上移
             final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
+            // 键盘弹起时弹窗顶部留更多空间，让弹窗整体上移
+            final topInset = keyboardHeight > 0 ? 10.0 : 20.0;
+
             return Dialog(
-              insetPadding: const EdgeInsets.all(20),
+              insetPadding: EdgeInsets.fromLTRB(20, topInset, 20, 20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -224,13 +227,21 @@ class _WishBookPageState extends State<WishBookPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // 照片区域 + OCR 红框叠加
+                    // 照片区域 + OCR 红框叠加（键盘弹起时限制高度，防止图片溢出遮挡输入框）
                     LayoutBuilder(
                       builder: (context, constraints) {
+                        final screenHeight = MediaQuery.of(context).size.height;
+                        // 可用高度：屏幕高度 - 键盘高度 - 标题/提示/输入框/按钮预估空间(~300px) - insets
+                        final availableHeight = screenHeight - keyboardHeight - 300 - topInset * 2 - 40;
+                        final maxPhotoHeight = availableHeight.clamp(120.0, 500.0);
+
                         final displayWidth = constraints.maxWidth;
-                        // 按照片宽高比 + 容器宽度计算显示高度
                         final photoAspect = imageSize.width / imageSize.height;
-                        final displayHeight = displayWidth / photoAspect;
+                        var displayHeight = displayWidth / photoAspect;
+                        // 键盘弹起时限制照片最大高度
+                        if (keyboardHeight > 0 && displayHeight > maxPhotoHeight) {
+                          displayHeight = maxPhotoHeight;
+                        }
 
                         return Stack(
                           children: [
