@@ -235,12 +235,13 @@ class _WishBookPageState extends State<WishBookPage> {
                         final availableHeight = screenHeight - keyboardHeight - 300 - topInset * 2 - 40;
                         final maxPhotoHeight = availableHeight.clamp(120.0, 500.0);
 
-                        final displayWidth = constraints.maxWidth;
                         final photoAspect = imageSize.width / imageSize.height;
+                        var displayWidth = constraints.maxWidth;
                         var displayHeight = displayWidth / photoAspect;
-                        // 键盘弹起时限制照片最大高度
+                        // 键盘弹起时限制照片高度，同时等比缩小宽度以保持坐标映射一致
                         if (keyboardHeight > 0 && displayHeight > maxPhotoHeight) {
                           displayHeight = maxPhotoHeight;
+                          displayWidth = displayHeight * photoAspect;
                         }
 
                         return Stack(
