@@ -1380,11 +1380,12 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
     _load();
   }
 
-  /// 监听筛选变化自动重新加载
+  /// 监听筛选变化 + 打卡数据变化，自动重新加载
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final filter = context.watch<FilterProvider>();
+    context.watch<CheckinProvider>(); // 监听打卡数据变化，确保打卡后自动刷新
     _loadWithFilter(filter);
   }
 
