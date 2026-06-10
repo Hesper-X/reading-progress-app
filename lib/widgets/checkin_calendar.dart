@@ -303,7 +303,7 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
                       bool isClickable = true;
 
                       if (isFuture) {
-                        textColor = AppColors.border;
+                        textColor = AppColors.textMuted;
                         isClickable = false;
                       } else if (isCheckedIn) {
                         bgColor = AppColors.primary;
