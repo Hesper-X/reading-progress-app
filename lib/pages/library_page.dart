@@ -63,8 +63,16 @@ class _LibraryPageState extends State<LibraryPage>
         shape: const Border(
           bottom: BorderSide(color: Color(0xFFDEE2E6), width: 1),
         ),
-        title: const Text('我的书架',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('我的书架',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            SizedBox(height: 2),
+            Text('（点击书籍卡片，可查阅打卡及笔记）',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+        ),
       ),
       body: Consumer<BooksProvider>(
         builder: (context, provider, _) {
