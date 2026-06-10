@@ -164,19 +164,31 @@ class _WishBookPageState extends State<WishBookPage> {
     // 弹窗内选中的书名
     String? selectedText;
 
+    // 过滤掉图片顶部 25% 区域内的识别框（非书名内容：出版社、装饰等）
+    final titleBlocks = blocks.where((block) {
+      final relativeTop = block.boundingBox.top / imageSize.height;
+      return relativeTop >= 0.25;
+    }).toList();
+
+    // 如果没有符合条件的书名块，使用全部（降级处理）
+    final displayBlocks = titleBlocks.isNotEmpty ? titleBlocks : blocks;
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            // 监听键盘高度，键盘弹起时弹窗底部上移
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
             return Dialog(
               insetPadding: const EdgeInsets.all(20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, keyboardHeight > 0 ? 12 : 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -232,8 +244,8 @@ class _WishBookPageState extends State<WishBookPage> {
                                 fit: BoxFit.contain,
                               ),
                             ),
-                            // 上层：OCR 文字块红框
-                            ...blocks.map((block) {
+                            // 上层：OCR 文字块红框（仅框，不显示文字）
+                            ...displayBlocks.map((block) {
                               // 坐标从原始图片映射到显示尺寸
                               final scaleX = displayWidth / imageSize.width;
                               final scaleY = displayHeight / imageSize.height;
@@ -268,17 +280,6 @@ class _WishBookPageState extends State<WishBookPage> {
                                         width: isSelected ? 2.5 : 2,
                                       ),
                                       borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      block.text,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                        decoration: TextDecoration.none,
-                                      ),
-                                      textAlign: TextAlign.center,
                                     ),
                                   ),
                                 ),
