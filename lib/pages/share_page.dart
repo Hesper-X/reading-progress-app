@@ -38,6 +38,11 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
   bool _showFavoriteAuthors = true;
   bool _showCheckinTop3 = true;
 
+  // 阅读投入 Top3 数据（与统计页共享，由 SharePage 加载）
+  List<Map<String, dynamic>>? _checkinTop3Data;
+  Map<String, int>? _checkinTotals;
+  bool _checkinTop3Loaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +50,38 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
     _textController.addListener(() {
       if (mounted) setState(() {});
     });
+  }
+
+  /// 在 SharePage 层面加载阅读投入 Top3，与统计页共享数据源
+  void _loadCheckinTop3IfNeeded(FilterProvider filter) {
+    // 避免在 build 中重复触发异步操作
+    final filterState = filter.state;
+    final year = filterState.fromReadingLife ? null : filterState.selectedYear;
+    final month = filterState.fromReadingLife ? null : filterState.selectedMonth;
+    _loadCheckinTop3FromRepo(year: year, month: month);
+  }
+
+  Future<void> _loadCheckinTop3FromRepo({int? year, int? month}) async {
+    try {
+      final repo = CheckinRepository(DatabaseHelper.instance);
+      final top3 = await repo.getTop3CheckinBooks(year: year, month: month);
+      final totals = await repo.getTotalCheckinStats(year: year, month: month);
+      if (mounted) {
+        setState(() {
+          _checkinTop3Data = top3;
+          _checkinTotals = totals;
+          _checkinTop3Loaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _checkinTop3Data = null;
+          _checkinTotals = null;
+          _checkinTop3Loaded = true;
+        });
+      }
+    }
   }
 
   @override
@@ -171,6 +208,10 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
       body: Consumer2<BooksProvider, FilterProvider>(
         builder: (context, booksProvider, filterProvider, _) {
           final filterState = filterProvider.state;
+
+          // 每次 FilterProvider 状态变化时重新加载 Top3 数据
+          _loadCheckinTop3IfNeeded(filterProvider);
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -191,6 +232,9 @@ class _SharePageState extends State<SharePage> with WidgetsBindingObserver {
                     showReadList: _showReadList,
                     showFavoriteAuthors: _showFavoriteAuthors,
                     showCheckinTop3: _showCheckinTop3,
+                    checkinTop3Data: _checkinTop3Data,
+                    checkinTotals: _checkinTotals,
+                    checkinTop3Loaded: _checkinTop3Loaded,
                   ),
                   const SizedBox(height: 16),
                   // === 进度环规则提示（黄色气泡） ===
@@ -302,6 +346,9 @@ class _SharePreviewCard extends StatefulWidget {
   final bool showReadList;
   final bool showFavoriteAuthors;
   final bool showCheckinTop3;
+  final List<Map<String, dynamic>>? checkinTop3Data;
+  final Map<String, int>? checkinTotals;
+  final bool checkinTop3Loaded;
 
   const _SharePreviewCard({
     required this.previewKey,
@@ -312,6 +359,9 @@ class _SharePreviewCard extends StatefulWidget {
     required this.showReadList,
     required this.showFavoriteAuthors,
     required this.showCheckinTop3,
+    this.checkinTop3Data,
+    this.checkinTotals,
+    this.checkinTop3Loaded = false,
   });
 
   @override
@@ -321,49 +371,6 @@ class _SharePreviewCard extends StatefulWidget {
 class _SharePreviewCardState extends State<_SharePreviewCard> {
   bool get _isCurrentYear => (widget.filterState.selectedYear ?? DateTime.now().year) == DateTime.now().year;
   bool get _showRing => !widget.filterState.fromReadingLife && _isCurrentYear && widget.filterState.selectedMonth == null;
-
-  List<Map<String, dynamic>>? _checkinTop3;
-  Map<String, int>? _checkinTotals;
-  bool _top3Loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCheckinTop3();
-  }
-
-  @override
-  void didUpdateWidget(covariant _SharePreviewCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 如果筛选条件变了，重新加载
-    if (oldWidget.filterState.selectedYear != widget.filterState.selectedYear ||
-        oldWidget.filterState.selectedMonth != widget.filterState.selectedMonth) {
-      _top3Loaded = false;
-      _loadCheckinTop3();
-    }
-  }
-
-  Future<void> _loadCheckinTop3() async {
-    try {
-      final filter = widget.filterState;
-      // 阅读生涯预览：查全部年份数据
-      final year = filter.fromReadingLife ? null : filter.selectedYear;
-      final month = filter.fromReadingLife ? null : filter.selectedMonth;
-      final dbHelper = DatabaseHelper.instance;
-      final repo = CheckinRepository(dbHelper);
-      final top3 = await repo.getTop3CheckinBooks(year: year, month: month);
-      final totals = await repo.getTotalCheckinStats(year: year, month: month);
-      if (mounted) {
-        setState(() {
-          _checkinTop3 = top3;
-          _checkinTotals = totals;
-          _top3Loaded = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _top3Loaded = true);
-    }
-  }
 
   static String _formatDuration(int minutes) {
     if (minutes <= 0) return '';
@@ -589,8 +596,8 @@ class _SharePreviewCardState extends State<_SharePreviewCard> {
                   _ShareFavBooks(data: favBooks),
                 if (widget.showLongestShortest && longest != null)
                   _ShareDurSection(longest: longest!, shortest: shortest ?? longest!),
-                if (widget.showCheckinTop3 && _top3Loaded && _checkinTop3 != null && _checkinTop3!.isNotEmpty)
-                  _ShareCheckinTop3(data: _checkinTop3!, totals: _checkinTotals),
+                if (widget.showCheckinTop3 && widget.checkinTop3Loaded && widget.checkinTop3Data != null && widget.checkinTop3Data!.isNotEmpty)
+                  _ShareCheckinTop3(data: widget.checkinTop3Data!, totals: widget.checkinTotals),
                 if (widget.showReadList && readList.isNotEmpty)
                   _ShareReadList(books: readList),
                 if (widget.showFavoriteAuthors && favAuthors.isNotEmpty)
