@@ -139,12 +139,14 @@ class _CheckinCalendarState extends State<CheckinCalendar> {
   }
 
   void _showDetailDialog(CheckinProvider provider, String dateStr) {
+    // 预创建 Future，避免 builder 重复调用时重建导致闪烁
+    final future = provider.getDaySummary(dateStr);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FutureBuilder<CheckinDaySummary>(
-        future: provider.getDaySummary(dateStr),
+        future: future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
