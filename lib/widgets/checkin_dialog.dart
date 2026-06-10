@@ -201,19 +201,8 @@ class CheckinDetailDialog extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 当天记录列表
-          ...summary.details.map((detail) {
-            final bookTitle =
-                summary.bookTitles[detail.bookId] ?? '未知书籍';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _RecordCard(
-                bookTitle: bookTitle,
-                durationStr: detail.formattedDuration,
-                note: detail.note,
-              ),
-            );
-          }),
+          // 当天记录列表（预构建列表避免 spread 导致的布局抖动）
+          ..._buildRecordList(),
 
           // 当日合计
           if (summary.totalMinutes > 0) ...[
@@ -270,6 +259,21 @@ class CheckinDetailDialog extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildRecordList() {
+    return summary.details.map((detail) {
+      final bookTitle =
+          summary.bookTitles[detail.bookId] ?? '未知书籍';
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _RecordCard(
+          bookTitle: bookTitle,
+          durationStr: detail.formattedDuration,
+          note: detail.note,
+        ),
+      );
+    }).toList();
+  }
+
   String _formatDate(String dateStr) {
     final parts = dateStr.split('-');
     if (parts.length != 3) return dateStr;
@@ -304,6 +308,7 @@ class _DialogContainer extends StatelessWidget {
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + bottomInset),
       child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
         child: child,
       ),
     );
