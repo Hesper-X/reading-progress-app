@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:app_settings/app_settings.dart';
 import '../providers/settings_provider.dart';
 import '../providers/books_provider.dart';
+import '../providers/checkin_provider.dart';
 import '../services/reminder_scheduler.dart';
 import '../services/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -491,6 +492,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // 刷新数据
       await booksProvider.loadBooks();
+      // V3.5 fix: 导入后同步刷新打卡数据和年度目标
+      context.read<CheckinProvider>().loadMonthCheckins();
+      context.read<SettingsProvider>().loadSettings();
 
       if (mounted) {
         final checkinCount = importedCheckins?.length ?? 0;
@@ -610,6 +614,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // 清空 books 表
       await database.delete('books');
+      // V3.5 fix: 同时清空打卡记录
+      await database.delete('checkins');
       // 重置设置
       await database.delete('settings', where: "key NOT IN ('pro_purchased')");
 

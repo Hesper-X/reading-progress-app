@@ -1528,8 +1528,8 @@ class _CheckinTop3SectionState extends State<_CheckinTop3Section> {
                 Text(_formatDuration(totalMin),
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFFF6B6B))),
                 SizedBox(width: 6),
-                Text(' 天',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF868E96))),
+                Text('$checkinDays 天',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF212529))),
               ],
             ),
           );
