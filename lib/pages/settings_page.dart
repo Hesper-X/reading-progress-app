@@ -615,7 +615,7 @@ class _SettingsPageState extends State<SettingsPage> {
       // 清空 books 表
       await database.delete('books');
       // V3.5 fix: 同时清空打卡记录
-      await database.delete('checkins');
+      await database.delete('checkin_details');
       // 重置设置
       await database.delete('settings', where: "key NOT IN ('pro_purchased')");
 
